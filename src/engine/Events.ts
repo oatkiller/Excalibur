@@ -4,13 +4,12 @@ import { Actor } from './Actor';
 import { Trigger } from './Trigger';
 import { FrameStats } from './Debug';
 import { Engine } from './Engine';
-import { TileMap } from './TileMap';
 import { Side } from './Collision/Side';
 import * as Input from './Input/Index';
 import { Pair } from './index';
 import { Collider } from './Collision/Collider';
 import { Entity } from './EntityComponentSystem/Entity';
-import { OnInitialize, OnPreUpdate, OnPostUpdate } from './Interfaces/LifecycleEvents';
+import { OnInitialize, OnPreUpdate, OnPostUpdate, OnPreDraw, OnPostDraw } from './Interfaces/LifecycleEvents';
 
 export enum EventTypes {
   Kill = 'kill',
@@ -292,8 +291,8 @@ export class GameStopEvent extends GameEvent<Engine> {
  * transform so that all drawing takes place with the actor as the origin.
  *
  */
-export class PreDrawEvent extends GameEvent<Entity | Scene | Engine | TileMap> {
-  constructor(public ctx: CanvasRenderingContext2D, public delta: number, public target: Entity | Scene | Engine | TileMap) {
+export class PreDrawEvent<T extends OnPreDraw = OnPreDraw> extends GameEvent<T> {
+  constructor(public ctx: CanvasRenderingContext2D, public delta: number, public target: T) {
     super();
   }
 }
@@ -303,8 +302,8 @@ export class PreDrawEvent extends GameEvent<Entity | Scene | Engine | TileMap> {
  * transform so that all drawing takes place with the actor as the origin.
  *
  */
-export class PostDrawEvent extends GameEvent<Entity | Scene | Engine | TileMap> {
-  constructor(public ctx: CanvasRenderingContext2D, public delta: number, public target: Entity | Scene | Engine | TileMap) {
+export class PostDrawEvent<T extends OnPostDraw = OnPostDraw> extends GameEvent<T> {
+  constructor(public ctx: CanvasRenderingContext2D, public delta: number, public target: T) {
     super();
   }
 }

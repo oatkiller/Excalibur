@@ -1,6 +1,6 @@
 import { Actionable } from './Actions/Actionable';
 import { Trait } from './Interfaces/Trait';
-import { Drawable } from './Interfaces/Drawable';
+import { Drawable } from './Drawing/Drawable';
 import { CanInitialize, CanActivate, CanDeactivate, CanUpdate, CanDraw, CanBeKilled } from './Interfaces/LifecycleEvents';
 import { CollisionShape } from './Collision/CollisionShape';
 import { Eventable } from './Interfaces/Evented';
