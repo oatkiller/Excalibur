@@ -4,6 +4,10 @@ import { Engine } from '../Engine';
 import { Message, Observer } from '../Util/Observable';
 import { Component } from './Component';
 
+export interface SystemCtor {
+  new (engine: Engine): System;
+}
+
 /**
  * An Excalibur [[System]] that updates entities of certain types.
  * Systems are scene specific
@@ -33,19 +37,25 @@ export abstract class System<T extends Component = Component> implements Observe
    * @param engine
    * @param delta Time in milliseconds since the last frame
    */
-  preupdate?: (engine: Engine, delta: number) => void;
+  public preupdate(_engine: Engine, _delta: number): void {
+    // Override me
+  }
 
   /**
    * Optionally run a postupdate after the system processes matching entities
    * @param engine
    * @param delta Time in milliseconds since the last frame
    */
-  postupdate?: (engine: Engine, delta: number) => void;
+  public postupdate(_engine: Engine, _delta: number): void {
+    // Override me
+  }
 
   /**
    * Optionally run a debug draw step to visualize the internals of the system
    */
-  debugDraw?: (ctx: CanvasRenderingContext2D, delta: number) => void;
+  public debugDraw(_ctx: CanvasRenderingContext2D, _delta: number): void {
+    // Override me
+  }
 
   /**
    * Systems observe when entities match their types or no longer match their types, override

@@ -30,7 +30,7 @@ export interface Component<T extends ComponentType = ComponentType> {
   clone(): Component;
 
   /**
-   * Optional callback called when a component is added to an entity
+   * Optional callback called when a component is added to an entity, dependecies are guaranteed to exist before `onAdd()` is called
    */
   onAdd?: (owner: Entity) => void;
 

@@ -29,7 +29,8 @@ export function isRemovedComponent(x: Message<EntityComponent>): x is RemovedCom
   return !!x && x.type === 'Component Removed';
 }
 
-export type ComponentMap = { [type: string]: Component };
+export type NullableComponent = Component | null;
+export type ComponentMap = { [type: string]: NullableComponent };
 export type ComponentMapProp<T extends Component['type'], U extends { type: Component['type'] }> = U extends { type: T } ? U : never;
 
 export class Entity<T extends Component = Component> extends Class implements OnInitialize, OnPreUpdate, OnPostUpdate {
@@ -106,7 +107,7 @@ export class Entity<T extends Component = Component> extends Class implements On
     return newEntity;
   }
 
-  public addComponent(component: Component | Entity, force: boolean = false) {
+  public addComponent(component: Component | Entity, force: boolean = false): Entity<T> {
     // If you use an entity as a "prefab" or template
     if (component instanceof Entity) {
       for (const c in component.components) {
@@ -116,7 +117,7 @@ export class Entity<T extends Component = Component> extends Class implements On
     } else {
       // if component already exists, skip if not forced
       if (this.components[component.type] && !force) {
-        return;
+        return this;
       }
 
       // Remove existing component type if exists when forced
@@ -139,9 +140,10 @@ export class Entity<T extends Component = Component> extends Class implements On
         component.onAdd(this);
       }
     }
+    return this;
   }
 
-  public removeComponent(componentOrType: string | Component) {
+  public removeComponent(componentOrType: string | Component): Entity<T> {
     if (typeof componentOrType === 'string') {
       if (this.components[componentOrType]) {
         this.components[componentOrType].owner = null;
@@ -161,6 +163,8 @@ export class Entity<T extends Component = Component> extends Class implements On
         this._dirty = true;
       }
     }
+
+    return this;
   }
 
   public has(type: ComponentType): boolean {

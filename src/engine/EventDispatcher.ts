@@ -23,6 +23,10 @@ export class EventDispatcher<T = any> implements Eventable {
     this._target = target;
   }
 
+  public setTarget(target: T) {
+    this._target = target;
+  }
+
   /**
    * Clears any existing handlers or wired event dispatchers on this event dispatcher
    */

@@ -5,8 +5,6 @@ import { CanUpdate, CanDraw, CanInitialize } from './Interfaces/LifecycleEvents'
 import { Loadable } from './Interfaces/Loadable';
 import { Promise } from './Promises';
 import { Vector } from './Algebra';
-import { ScreenElement } from './ScreenElement';
-import { Actor } from './Actor';
 import { Timer } from './Timer';
 import { TileMap } from './TileMap';
 import { Animation } from './Drawing/Animation';
@@ -40,6 +38,7 @@ import * as Util from './Util/Util';
 import * as Events from './Events';
 import { BoundingBox } from './Collision/BoundingBox';
 import { BrowserEvents } from './Util/Browser';
+import { Entity } from './EntityComponentSystem';
 
 /**
  * Enum representing the different display modes available to Excalibur
@@ -750,21 +749,9 @@ O|===|* >________________>\n\
    *
    * @param actor  The actor to add to the [[currentScene]]
    */
-  public add(actor: Actor): void;
-
-  /**
-   * Adds a [[ScreenElement]] to the [[currentScene]] of the game,
-   * ScreenElements do not participate in collisions, instead the
-   * remain in the same place on the screen.
-   * @param screenElement  The ScreenElement to add to the [[currentScene]]
-   */
-  public add(screenElement: ScreenElement): void;
+  public add(actor: Entity): void;
   public add(entity: any): void {
-    if (entity instanceof ScreenElement) {
-      this.currentScene.addScreenElement(entity);
-      return;
-    }
-    if (entity instanceof Actor) {
+    if (entity instanceof Entity) {
       this._addChild(entity);
     }
     if (entity instanceof Timer) {
@@ -806,18 +793,9 @@ O|===|* >________________>\n\
    *
    * @param actor  The actor to remove from the [[currentScene]].
    */
-  public remove(actor: Actor): void;
-  /**
-   * Removes a [[ScreenElement]] to the scene, it will no longer be drawn or updated
-   * @param screenElement  The ScreenElement to remove from the [[currentScene]]
-   */
-  public remove(screenElement: ScreenElement): void;
+  public remove(actor: Entity): void;
   public remove(entity: any): void {
-    if (entity instanceof ScreenElement) {
-      this.currentScene.removeScreenElement(entity);
-      return;
-    }
-    if (entity instanceof Actor) {
+    if (entity instanceof Entity) {
       this._removeChild(entity);
     }
     if (entity instanceof Timer) {
@@ -844,10 +822,10 @@ O|===|* >________________>\n\
    * Actors can only be drawn if they are a member of a scene, and only
    * the [[currentScene]] may be drawn or updated.
    *
-   * @param actor  The actor to add to the [[currentScene]]
+   * @param entity  The actor to add to the [[currentScene]]
    */
-  protected _addChild(actor: Actor) {
-    this.currentScene.add(actor);
+  protected _addChild(entity: Entity) {
+    this.currentScene.add(entity);
   }
 
   /**
@@ -857,8 +835,8 @@ O|===|* >________________>\n\
    *
    * @param actor  The actor to remove from the [[currentScene]].
    */
-  protected _removeChild(actor: Actor) {
-    this.currentScene.remove(actor);
+  protected _removeChild(entity: Entity) {
+    this.currentScene.remove(entity);
   }
 
   /**
