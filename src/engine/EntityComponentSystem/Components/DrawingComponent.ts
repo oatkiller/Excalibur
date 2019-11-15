@@ -3,7 +3,10 @@ import { Component } from '../Component';
 import { BuiltinComponentType } from '../ComponentTypes';
 import { Entity } from '../Entity';
 import { Drawable } from '../../Drawing/Drawable';
-import { hasPreDraw, PreDrawEvent, PostDrawEvent, hasPostDraw, OnPreDraw, OnPostDraw, EventDispatcher, Events, GameEvent } from '../..';
+import { EventDispatcher } from '../../EventDispatcher';
+import { hasPreDraw, hasPostDraw, OnPreDraw, OnPostDraw } from '../../Interfaces/LifecycleEvents';
+import { GameEvent, PreDrawEvent, PostDrawEvent } from '../../Events';
+import * as Events from '../../Events';
 
 export interface DrawingOptions {
   /**
