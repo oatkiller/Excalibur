@@ -54,7 +54,8 @@ export class QueryManager {
    */
   public removeComponent(entity: Entity, component: Component) {
     for (const queryType in this._queries) {
-      if (this._queries[queryType].matches(entity.types.concat([component.type]))) {
+      // doesnt match now but it used to
+      if (!this._queries[queryType].matches(entity.types) && this._queries[queryType].matches(entity.types.concat([component.type]))) {
         this._queries[queryType].removeEntity(entity);
       }
     }

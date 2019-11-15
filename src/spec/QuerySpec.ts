@@ -77,7 +77,7 @@ describe('A query', () => {
     expect(queryAB.entities).toEqual([]);
   });
 
-  it('notifies obersvers of when something is added to the query', (done) => {
+  it('notifies observers of when something is added to the query', (done) => {
     const queryAB = new ex.Query(['A', 'B']);
     const compA = new FakeComponent('A');
     const compB = new FakeComponent('B');

@@ -120,6 +120,25 @@ describe('A QueryManager', () => {
     expect(queryAB.entities).toEqual([]);
   });
 
+  it('can only remove entities when components no longer match', () => {
+    const scene = new ex.Scene(new ex.Engine());
+    scene.systemManager.clearSystems();
+    const queryAB = scene.queryManager.createQuery(['A', 'B']);
+    const compA = new FakeComponent('A');
+    const compB = new FakeComponent('B');
+    const compC = new FakeComponent('C');
+    const entity1 = new ex.Entity<FakeComponent<'A'> | FakeComponent<'B'>>();
+    entity1.addComponent(compA);
+    entity1.addComponent(compB);
+    entity1.addComponent(compC);
+
+    scene.queryManager.addEntity(entity1);
+    expect(queryAB.entities).toEqual([entity1]);
+
+    scene.queryManager.removeComponent(entity1, compC);
+    expect(queryAB.entities).toEqual([entity1]);
+  });
+
   it('can update queries when a component is removed', () => {
     const scene = new ex.Scene(null);
     const entity1 = new ex.Entity();
