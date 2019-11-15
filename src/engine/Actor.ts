@@ -98,6 +98,10 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
     return this.components.transform;
   }
 
+  public get motion(): MotionComponent {
+    return this.components.motion;
+  }
+
   public get drawing(): DrawingComponent {
     return this.components.drawing;
   }
@@ -142,7 +146,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    */
   @obsolete({ message: 'ex.Actor.x will be removed in v0.24.0', alternateMethod: 'ex.Actor.pos.x, or ex.Actor.body.pos.x' })
   public get x(): number {
-    return this.body.pos.x;
+    return this.transform.pos.x;
   }
 
   /**
@@ -150,7 +154,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.x will be removed in v0.24.0, use ex.Actor.pos.x
    */
   public set x(theX: number) {
-    this.body.pos.x = theX;
+    this.transform.pos.x = theX;
   }
 
   /**
@@ -159,7 +163,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    */
   @obsolete({ message: 'ex.Actor.y will be removed in v0.24.0', alternateMethod: 'ex.Actor.pos.y, or ex.Actor.body.pos.y' })
   public get y(): number {
-    return this.body.pos.y;
+    return this.transform.pos.y;
   }
 
   /**
@@ -167,63 +171,63 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.y will be removed in v0.24.0, use ex.Actor.pos.y
    */
   public set y(theY: number) {
-    this.body.pos.y = theY;
+    this.transform.pos.y = theY;
   }
 
   /**
    * Gets the position vector of the actor in pixels
    */
   public get pos(): Vector {
-    return this.body.pos;
+    return this.transform.pos;
   }
 
   /**
    * Sets the position vector of the actor in pixels
    */
   public set pos(thePos: Vector) {
-    this.body.pos.setTo(thePos.x, thePos.y);
+    this.transform.pos.setTo(thePos.x, thePos.y);
   }
 
   /**
    * Gets the position vector of the actor from the last frame
    */
   public get oldPos(): Vector {
-    return this.body.oldPos;
+    return this.transform.old.pos;
   }
 
   /**
    * Sets the position vector of the actor in the last frame
    */
   public set oldPos(thePos: Vector) {
-    this.body.oldPos.setTo(thePos.x, thePos.y);
+    this.transform.old.pos.setTo(thePos.x, thePos.y);
   }
 
   /**
    * Gets the velocity vector of the actor in pixels/sec
    */
   public get vel(): Vector {
-    return this.body.vel;
+    return this.motion.vel;
   }
 
   /**
    * Sets the velocity vector of the actor in pixels/sec
    */
   public set vel(theVel: Vector) {
-    this.body.vel.setTo(theVel.x, theVel.y);
+    this.motion.vel.setTo(theVel.x, theVel.y);
   }
 
   /**
    * Gets the velocity vector of the actor from the last frame
    */
   public get oldVel(): Vector {
-    return this.body.oldVel;
+    return this.motion.old.vel;
   }
 
   /**
    * Sets the velocity vector of the actor from the last frame
    */
   public set oldVel(theVel: Vector) {
-    this.body.oldVel.setTo(theVel.x, theVel.y);
+    this.motion.vel.setTo(theVel.x, theVel.y);
   }
 
   /**
@@ -231,56 +235,56 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * useful to simulate a gravitational effect.
    */
   public get acc(): Vector {
-    return this.body.acc;
+    return this.motion.acc;
   }
 
   /**
    * Sets the acceleration vector of teh actor in pixels/second/second
    */
   public set acc(theAcc: Vector) {
-    this.body.acc.setTo(theAcc.x, theAcc.y);
+    this.motion.acc.setTo(theAcc.x, theAcc.y);
   }
 
   /**
    * Sets the acceleration of the actor from the last frame. This does not include the global acc [[Physics.acc]].
    */
   public set oldAcc(theAcc: Vector) {
-    this.body.oldAcc.setTo(theAcc.x, theAcc.y);
+    this.motion.old.acc.setTo(theAcc.x, theAcc.y);
   }
 
   /**
    * Gets the acceleration of the actor from the last frame. This does not include the global acc [[Physics.acc]].
    */
   public get oldAcc(): Vector {
-    return this.body.oldAcc;
+    return this.motion.old.acc;
   }
 
   /**
    * Gets the rotation of the actor in radians. 1 radian = 180/PI Degrees.
    */
   public get rotation(): number {
-    return this.body.rotation;
+    return this.transform.rotation;
   }
 
   /**
    * Sets the rotation of the actor in radians. 1 radian = 180/PI Degrees.
    */
   public set rotation(theAngle: number) {
-    this.body.rotation = theAngle;
+    this.transform.rotation = theAngle;
   }
 
   /**
    * Gets the rotational velocity of the actor in radians/second
    */
   public get rx(): number {
-    return this.body.rx;
+    return this.motion.angularVelocity;
   }
 
   /**
    * Sets the rotational velocity of the actor in radians/sec
    */
   public set rx(angularVelocity: number) {
-    this.body.rx = angularVelocity;
+    this.motion.angularVelocity = angularVelocity;
   }
 
   /**
@@ -289,7 +293,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    */
   @obsolete({ message: 'ex.Actor.torque will be removed in v0.24.0', alternateMethod: 'ex.Actor.body.torque' })
   public get torque() {
-    return this.body.torque;
+    return this.motion.torque;
   }
 
   /**
@@ -297,7 +301,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.torque will be removed in v0.24.0, use ex.Actor.body.torque
    */
   public set torque(theTorque: number) {
-    this.body.torque = theTorque;
+    this.motion.torque = theTorque;
   }
 
   /**
@@ -390,7 +394,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.scale will be removed in v0.24.0, set width and height directly in constructor
    */
   public get scale(): Vector {
-    return this.body.scale;
+    return this.transform.scale;
   }
 
   /**
@@ -398,7 +402,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.scale will be removed in v0.24.0, set width and height directly in constructor
    */
   public set scale(scale: Vector) {
-    this.body.scale = scale;
+    this.transform.scale = scale;
   }
 
   /**
@@ -406,7 +410,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.scale will be removed in v0.24.0, set width and height directly in constructor
    */
   public get oldScale(): Vector {
-    return this.body.oldScale;
+    return this.transform.old.scale;
   }
 
   /**
@@ -414,7 +418,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.scale will be removed in v0.24.0, set width and height directly in constructor
    */
   public set oldScale(scale: Vector) {
-    this.body.oldScale = scale;
+    this.transform.old.scale = scale;
   }
 
   /**
@@ -422,7 +426,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.sx will be removed in v0.24.0, set width and height directly in constructor
    */
   public get sx(): number {
-    return this.body.sx;
+    return this.motion.scaleVelocity.x;
   }
 
   /**
@@ -431,7 +435,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    */
   @obsolete({ message: 'ex.Actor.sx will be removed in v0.24.0', alternateMethod: 'Set width and height directly in constructor' })
   public set sx(scalePerSecondX: number) {
-    this.body.sx = scalePerSecondX;
+    this.motion.scaleVelocity.x = scalePerSecondX;
   }
 
   /**
@@ -439,7 +443,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    * @obsolete ex.Actor.sy will be removed in v0.24.0, set width and height directly in constructor
    */
   public get sy(): number {
-    return this.body.sy;
+    return this.motion.scaleVelocity.y;
   }
 
   /**
@@ -448,7 +452,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
    */
   @obsolete({ message: 'ex.Actor.sy will be removed in v0.24.0', alternateMethod: 'Set width and height directly in constructor' })
   public set sy(scalePerSecondY: number) {
-    this.body.sy = scalePerSecondY;
+    this.motion.scaleVelocity.y = scalePerSecondY;
   }
 
   /**

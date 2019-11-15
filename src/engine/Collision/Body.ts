@@ -1,18 +1,25 @@
 import { Vector } from '../Algebra';
 import { Actor } from '../Actor';
 import { Collider } from './Collider';
-import { CollisionType } from './CollisionType';
-import { Physics } from '../Physics';
 import { obsolete } from '../Util/Decorators';
 import { PreCollisionEvent, PostCollisionEvent, CollisionStartEvent, CollisionEndEvent } from '../Events';
 import { Clonable } from '../Interfaces/Clonable';
 import { Shape } from './Shape';
+import { Entity } from '../EntityComponentSystem/Entity';
+import { CollisionShape } from './CollisionShape';
+import { MotionComponent } from '../EntityComponentSystem/Components/MotionComponent';
+import { TransformComponent } from '../EntityComponentSystem/Components/TransformComponent';
 
 export interface BodyOptions {
   /**
-   * Optionally the actory associated with this body
+   * Optionally the actor associated with this body
    */
   actor?: Actor;
+
+  /**
+   * Optionally set the owning entity of the body
+   */
+  owner?: Entity;
   /**
    * An optional collider to use in this body, if none is specified a default Box collider will be created.
    */
@@ -25,16 +32,27 @@ export interface BodyOptions {
 export class Body implements Clonable<Body> {
   private _collider: Collider;
   public actor: Actor;
+  public owner: Entity<TransformComponent | MotionComponent>;
+
+  private get motion(): MotionComponent {
+    return this.owner.components.motion;
+  }
+
+  private get transform(): TransformComponent {
+    return this.owner.components.transform;
+  }
+
   /**
    * Constructs a new physics body associated with an actor
    */
-  constructor({ actor, collider }: BodyOptions) {
-    if (!actor && !collider) {
-      throw new Error('An actor or collider are required to create a body');
-    }
+  constructor({ actor, owner, collider }: BodyOptions = {}) {
+    // if (!actor && !collider) {
+    //   throw new Error('An actor or collider are required to create a body');
+    // }
 
     this.actor = actor;
-    if (!collider && actor) {
+    this.owner = (owner || actor) as Entity<TransformComponent | MotionComponent>;
+    if (!collider && this.actor) {
       this.collider = this.useBoxCollider(actor.width, actor.height, actor.anchor);
     } else {
       this.collider = collider;
@@ -42,7 +60,7 @@ export class Body implements Clonable<Body> {
   }
 
   public get id() {
-    return this.actor ? this.actor.id : -1;
+    return this.owner ? this.owner.id : -1;
   }
 
   /**
@@ -51,7 +69,7 @@ export class Body implements Clonable<Body> {
   public clone() {
     return new Body({
       actor: null,
-      collider: this.collider.clone()
+      collider: this.collider ? this.collider.clone() : null
     });
   }
 
@@ -60,7 +78,8 @@ export class Body implements Clonable<Body> {
   }
 
   public get center() {
-    return this.pos;
+    return this.transform.pos;
+    // return this.pos;
   }
 
   // TODO allow multiple colliders for a single body
@@ -81,65 +100,95 @@ export class Body implements Clonable<Body> {
    * [[Actor.anchor]] is set to (0.5, 0.5) which is default.
    * If you want the (x, y) position to be the top left of the actor specify an anchor of (0, 0).
    */
-  public pos: Vector = new Vector(0, 0);
+  public get pos(): Vector {
+    return this.transform.pos;
+  }
+
+  public set pos(pos: Vector) {
+    this.transform.pos = pos;
+  }
 
   /**
    * The position of the actor last frame (x, y) in pixels
    */
-  public oldPos: Vector = new Vector(0, 0);
+  public get oldPos(): Vector {
+    return this.transform.old.pos;
+  }
 
   /**
    * The current velocity vector (vx, vy) of the actor in pixels/second
    */
-  public vel: Vector = new Vector(0, 0);
+  public get vel(): Vector {
+    return this.motion.vel;
+  }
+
+  public set vel(vel: Vector) {
+    this.motion.vel = vel;
+  }
 
   /**
    * The velocity of the actor last frame (vx, vy) in pixels/second
    */
-  public oldVel: Vector = new Vector(0, 0);
+  public get oldVel(): Vector {
+    return this.motion.old.vel;
+  }
 
   /**
    * The curret acceleration vector (ax, ay) of the actor in pixels/second/second. An acceleration pointing down such as (0, 100) may
    * be useful to simulate a gravitational effect.
    */
-  public acc: Vector = new Vector(0, 0);
+  public get acc(): Vector {
+    return this.motion.acc;
+  }
 
   /**
    * Gets/sets the acceleration of the actor from the last frame. This does not include the global acc [[Physics.acc]].
    */
-  public oldAcc: Vector = Vector.Zero;
+  public get oldAcc(): Vector {
+    return this.motion.acc;
+  }
 
   /**
    * The current torque applied to the actor
    */
-  public torque: number = 0;
+  public get torque(): number {
+    return this.motion.torque;
+  }
 
   /**
    * The current "motion" of the actor, used to calculated sleep in the physics simulation
    */
-  public motion: number = 10;
+  // public motion: number = 10;
 
   /**
    * Gets/sets the rotation of the body from the last frame.
    */
-  public oldRotation: number = 0; // radians
+  public get oldRotation(): number {
+    return this.transform.old.rotation;
+  }
 
   /**
    * The rotation of the actor in radians
    */
-  public rotation: number = 0; // radians
+  public get rotation(): number {
+    return this.transform.rotation;
+  }
 
   /**
    * The scale vector of the actor
    * @obsolete ex.Body.scale will be removed in v0.24.0
    */
-  public scale: Vector = Vector.One;
+  public get scale(): Vector {
+    return this.transform.scale;
+  }
 
   /**
    * The scale of the actor last frame
    * @obsolete ex.Body.scale will be removed in v0.24.0
    */
-  public oldScale: Vector = Vector.One;
+  public get oldScale(): Vector {
+    return this.transform.old.scale;
+  }
 
   /**
    * The x scalar velocity of the actor in scale/second
@@ -155,7 +204,24 @@ export class Body implements Clonable<Body> {
   /**
    * The rotational velocity of the actor in radians/second
    */
-  public rx: number = 0; //radians/sec
+  public get rx(): number {
+    return this.motion.angularVelocity;
+  }
+
+  public set rx(rx: number) {
+    this.motion.angularVelocity = rx;
+  }
+
+  /**
+   * The rotational velocity of the actor in radians/second
+   */
+  public get angularVelocity(): number {
+    return this.motion.angularVelocity;
+  }
+
+  public set angularVelocity(angularVelocity: number) {
+    this.motion.angularVelocity = angularVelocity;
+  }
 
   private _geometryDirty = false;
 
@@ -192,34 +258,34 @@ export class Body implements Clonable<Body> {
    */
   public captureOldTransform() {
     // Capture old values before integration step updates them
-    this.oldVel.setTo(this.vel.x, this.vel.y);
-    this.oldPos.setTo(this.pos.x, this.pos.y);
-    this.oldAcc.setTo(this.acc.x, this.acc.y);
-    this.oldScale.setTo(this.scale.x, this.scale.y);
-    this.oldRotation = this.rotation;
+    // this.oldVel.setTo(this.vel.x, this.vel.y);
+    // this.oldPos.setTo(this.pos.x, this.pos.y);
+    // this.oldAcc.setTo(this.acc.x, this.acc.y);
+    // this.oldScale.setTo(this.scale.x, this.scale.y);
+    // this.oldRotation = this.rotation;
   }
 
   /**
    * Perform euler integration at the specified time step
    */
-  public integrate(delta: number) {
+  public integrate(_delta: number) {
     // Update placements based on linear algebra
-    const seconds = delta / 1000;
+    // const seconds = delta / 1000;
 
-    const totalAcc = this.acc.clone();
-    // Only active vanilla actors are affected by global acceleration
-    if (this.collider.type === CollisionType.Active) {
-      totalAcc.addEqual(Physics.acc);
-    }
+    // const totalAcc = this.acc.clone();
+    // // Only active vanilla actors are affected by global acceleration
+    // if (this.collider && this.collider.type === CollisionType.Active) {
+    //   totalAcc.addEqual(Physics.acc);
+    // }
 
-    this.vel.addEqual(totalAcc.scale(seconds));
-    this.pos.addEqual(this.vel.scale(seconds)).addEqual(totalAcc.scale(0.5 * seconds * seconds));
+    // this.vel.addEqual(totalAcc.scale(seconds));
+    // this.pos.addEqual(this.vel.scale(seconds)).addEqual(totalAcc.scale(0.5 * seconds * seconds));
 
-    this.rx += this.torque * (1.0 / this.collider.inertia) * seconds;
-    this.rotation += this.rx * seconds;
+    // this.rx += this.torque * (1.0 / this.collider.inertia) * seconds;
+    // this.rotation += this.rx * seconds;
 
-    this.scale.x += (this.sx * delta) / 1000;
-    this.scale.y += (this.sy * delta) / 1000;
+    // this.scale.x += (this.sx * delta) / 1000;
+    // this.scale.y += (this.sy * delta) / 1000;
 
     if (!this.scale.equals(this.oldScale)) {
       // change in scale effects the geometry
@@ -227,8 +293,23 @@ export class Body implements Clonable<Body> {
     }
 
     // Update colliders
-    this.collider.update();
+    if (this.collider) {
+      this.collider.update();
+    }
     this._geometryDirty = false;
+  }
+
+  private _setColliderShape(collider: Collider, body: Body, shape: CollisionShape, offset: Vector): Collider {
+    if (!collider) {
+      collider = new Collider({
+        body: body,
+        offset: offset,
+        shape: shape
+      });
+    } else {
+      collider.shape = shape;
+    }
+    return collider;
   }
 
   /**
@@ -237,8 +318,8 @@ export class Body implements Clonable<Body> {
    * By default, the box is center is at (0, 0) which means it is centered around the actors anchor.
    */
   public useBoxCollider(width: number, height: number, anchor: Vector = Vector.Half, center: Vector = Vector.Zero): Collider {
-    this.collider.shape = Shape.Box(width, height, anchor, center);
-    return this.collider;
+    const shape = Shape.Box(width, height, anchor, center);
+    return this._setColliderShape(this.collider, this, shape, center);
   }
 
   /**
@@ -259,8 +340,8 @@ export class Body implements Clonable<Body> {
    * By default, the box is center is at (0, 0) which means it is centered around the actors anchor.
    */
   public usePolygonCollider(points: Vector[], center: Vector = Vector.Zero): Collider {
-    this.collider.shape = Shape.Polygon(points, false, center);
-    return this.collider;
+    const shape = Shape.Polygon(points, false, center);
+    return this._setColliderShape(this.collider, this, shape, center);
   }
 
   /**
@@ -277,8 +358,8 @@ export class Body implements Clonable<Body> {
    * By default, the box is center is at (0, 0) which means it is centered around the actors anchor.
    */
   public useCircleCollider(radius: number, center: Vector = Vector.Zero): Collider {
-    this.collider.shape = Shape.Circle(radius, center);
-    return this.collider;
+    const shape = Shape.Circle(radius, center);
+    return this._setColliderShape(this.collider, this, shape, center);
   }
 
   /**
@@ -296,8 +377,8 @@ export class Body implements Clonable<Body> {
    * By default, the box is center is at (0, 0) which means it is centered around the actors anchor.
    */
   public useEdgeCollider(begin: Vector, end: Vector): Collider {
-    this.collider.shape = Shape.Edge(begin, end);
-    return this.collider;
+    const shape = Shape.Edge(begin, end);
+    return this._setColliderShape(this.collider, this, shape, Vector.Zero);
   }
 
   /**
