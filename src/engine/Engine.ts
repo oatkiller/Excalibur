@@ -1212,6 +1212,13 @@ O|===|* >________________>\n\
     // Override me
   }
 
+  public clearScreen() {
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    ctx.fillStyle = this.backgroundColor.toString();
+    ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+  }
+
   /**
    * Draws the entire game
    * @param delta  Number of milliseconds elapsed since the last draw.
@@ -1225,10 +1232,6 @@ O|===|* >________________>\n\
       // Drawing nothing else while loading
       return;
     }
-
-    ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-    ctx.fillStyle = this.backgroundColor.toString();
-    ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
     this.currentScene.draw(this.ctx, delta);
 

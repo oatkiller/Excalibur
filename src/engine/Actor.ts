@@ -26,7 +26,7 @@ import { Engine } from './Engine';
 import { Color } from './Drawing/Color';
 import { Sprite } from './Drawing/Sprite';
 import { Trait } from './Interfaces/Trait';
-import { Drawable } from './Interfaces/Drawable';
+import { Drawable } from './Drawing/Drawable';
 import { CanInitialize, CanUpdate, CanDraw, CanBeKilled } from './Interfaces/LifecycleEvents';
 import { Scene } from './Scene';
 import { Logger } from './Util/Log';
@@ -50,6 +50,9 @@ import { Collider } from './Collision/Collider';
 import { Shape } from './Collision/Shape';
 
 import { Entity } from './EntityComponentSystem/Entity';
+import { TransformComponent } from './EntityComponentSystem/Components/TransformComponent';
+import { MotionComponent } from './EntityComponentSystem/Components/MotionComponent';
+import { DrawingComponent } from './EntityComponentSystem/Components/DrawingComponent';
 
 export function isActor(x: any): x is Actor {
   return x instanceof Actor;
@@ -80,7 +83,8 @@ export interface ActorDefaults {
  * @hidden
  */
 
-export class ActorImpl extends Entity implements Actionable, Eventable, PointerEvents, CanInitialize, CanUpdate, CanDraw, CanBeKilled {
+export class ActorImpl extends Entity<TransformComponent | MotionComponent | DrawingComponent>
+  implements Actionable, Eventable, PointerEvents, CanInitialize, CanUpdate, CanDraw, CanBeKilled {
   // #region Properties
 
   /**
@@ -89,14 +93,14 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
   public static defaults: ActorDefaults = {
     anchor: Vector.Half
   };
-  /**
-   * Indicates the next id to be set
-   */
-  public static maxId = 0;
-  /**
-   * The unique identifier for the actor
-   */
-  public id: number = ActorImpl.maxId++;
+
+  public get transform(): TransformComponent {
+    return this.components.transform;
+  }
+
+  public get drawing(): DrawingComponent {
+    return this.components.drawing;
+  }
 
   /**
    * The physics body the is associated with this actor. The body is the container for all physical properties, like position, velocity,
@@ -518,7 +522,6 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
 
   private _collisionHandlers: { [key: string]: { (actor: Actor): void }[] } = {};
   public frames: { [key: string]: Drawable } = {};
-  private _effectsDirty: boolean = false;
 
   /**
    * Access to the current drawing for the actor, this can be
@@ -560,7 +563,6 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
     captureDragEvents: false
   };
 
-  private _zIndex: number = 0;
   private _isKilled: boolean = false;
   private _opacityFx = new Effects.Opacity(this.opacity);
 
@@ -579,6 +581,10 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
 
     // initialize default options
     this._initDefaults();
+
+    this.addComponent(new TransformComponent());
+    this.addComponent(new MotionComponent());
+    this.addComponent(new DrawingComponent());
 
     let shouldInitializeBody = true;
     if (xOrConfig && typeof xOrConfig === 'object') {
@@ -624,7 +630,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
 
     // Build default pipeline
     this.traits.push(new Traits.TileMapCollisionDetection());
-    this.traits.push(new Traits.OffscreenCulling());
+    // this.traits.push(new Traits.OffscreenCulling());
     this.traits.push(new Traits.CapturePointer());
 
     // Build the action queue
@@ -1000,9 +1006,10 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
       actor.parent = null;
     }
   }
+
   /**
    * Sets the current drawing of the actor to the drawing corresponding to
-   * the key.
+   * the key
    * @param key The key of the drawing
    */
   public setDrawing(key: string): void;
@@ -1012,15 +1019,11 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * @param key The `enum` key of the drawing
    */
   public setDrawing(key: number): void;
-  public setDrawing(key: any): void {
-    key = key.toString();
-    if (this.currentDrawing !== this.frames[<string>key]) {
-      if (this.frames[key] != null) {
-        this.frames[key].reset();
-        this.currentDrawing = this.frames[key];
-      } else {
-        Logger.getInstance().error(`the specified drawing key ${key} does not exist`);
-      }
+  @obsolete()
+  public setDrawing(key: string | number): void {
+    const drawing: DrawingComponent = this.components.drawing;
+    if (drawing) {
+      drawing.show(key.toString());
     }
   }
 
@@ -1037,51 +1040,53 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * @param key     The key to associate with a drawing for this actor
    * @param drawing This can be an [[Animation]], [[Sprite]], or [[Polygon]].
    */
-  public addDrawing(key: any, drawing: Drawable): void;
+  public addDrawing(key: string | number, drawing: Drawable): void;
+  @obsolete()
   public addDrawing(): void {
-    if (arguments.length === 2) {
-      this.frames[<string>arguments[0]] = arguments[1];
-      if (!this.currentDrawing) {
-        this.currentDrawing = arguments[1];
-      }
-      this._effectsDirty = true;
-    } else {
-      if (arguments[0] instanceof Sprite) {
-        this.addDrawing('default', arguments[0]);
-      }
-      if (arguments[0] instanceof Texture) {
-        this.addDrawing('default', arguments[0].asSprite());
+    const drawing: DrawingComponent = this.components.drawing;
+    if (drawing) {
+      if (arguments.length === 2) {
+        drawing.add(<string>arguments[0].toString(), arguments[1]);
+      } else {
+        if (arguments[0] instanceof Sprite) {
+          drawing.add('default', arguments[0]);
+          drawing.show('default');
+        }
+        if (arguments[0] instanceof Texture) {
+          drawing.add('default', arguments[0].asSprite());
+          drawing.show('default');
+        }
       }
     }
   }
 
   public get z(): number {
-    return this.getZIndex();
+    return this.components.transform.z;
   }
 
   public set z(newZ: number) {
-    this.setZIndex(newZ);
+    this.components.transform.z = newZ;
   }
 
-  /**
-   * Gets the z-index of an actor. The z-index determines the relative order an actor is drawn in.
-   * Actors with a higher z-index are drawn on top of actors with a lower z-index
-   */
-  public getZIndex(): number {
-    return this._zIndex;
-  }
+  // /**
+  //  * Gets the z-index of an actor. The z-index determines the relative order an actor is drawn in.
+  //  * Actors with a higher z-index are drawn on top of actors with a lower z-index
+  //  */
+  // public getZIndex(): number {
+  //   return this._zIndex;
+  // }
 
-  /**
-   * Sets the z-index of an actor and updates it in the drawing list for the scene.
-   * The z-index determines the relative order an actor is drawn in.
-   * Actors with a higher z-index are drawn on top of actors with a lower z-index
-   * @param newIndex new z-index to assign
-   */
-  public setZIndex(newIndex: number) {
-    this.scene.cleanupDrawTree(this);
-    this._zIndex = newIndex;
-    this.scene.updateDrawTree(this);
-  }
+  // /**
+  //  * Sets the z-index of an actor and updates it in the drawing list for the scene.
+  //  * The z-index determines the relative order an actor is drawn in.
+  //  * Actors with a higher z-index are drawn on top of actors with a lower z-index
+  //  * @param newIndex new z-index to assign
+  //  */
+  // public setZIndex(newIndex: number) {
+  //   this.scene.cleanupDrawTree(this);
+  //   this._zIndex = newIndex;
+  //   this.scene.updateDrawTree(this);
+  // }
 
   /**
    * Adds an actor to a collision group. Actors with no named collision groups are
@@ -1477,14 +1482,13 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
     if (this.previousOpacity !== this.opacity) {
       this.previousOpacity = this.opacity;
       this._opacityFx.opacity = this.opacity;
-      this._effectsDirty = true;
     }
 
-    // capture old transform
-    this.body.captureOldTransform();
+    // // capture old transform
+    // this.body.captureOldTransform();
 
-    // Run Euler integration
-    this.body.integrate(delta);
+    // // Run Euler integration
+    // this.body.integrate(delta);
 
     // Update actor pipeline (movement, collision detection, event propagation, offscreen culling)
     for (const trait of this.traits) {
@@ -1499,95 +1503,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
     this._postupdate(engine, delta);
   }
 
-  /**
-   * Safe to override onPreUpdate lifecycle event handler. Synonymous with `.on('preupdate', (evt) =>{...})`
-   *
-   * `onPreUpdate` is called directly before an actor is updated.
-   */
-  public onPreUpdate(_engine: Engine, _delta: number): void {
-    // Override me
-  }
-
-  /**
-   * Safe to override onPostUpdate lifecycle event handler. Synonymous with `.on('postupdate', (evt) =>{...})`
-   *
-   * `onPostUpdate` is called directly after an actor is updated.
-   */
-  public onPostUpdate(_engine: Engine, _delta: number): void {
-    // Override me
-  }
-
-  /**
-   * It is not recommended that internal excalibur methods be overriden, do so at your own risk.
-   *
-   * Internal _preupdate handler for [[onPreUpdate]] lifecycle event
-   * @internal
-   */
-  public _preupdate(engine: Engine, delta: number): void {
-    this.emit('preupdate', new PreUpdateEvent(engine, delta, this));
-    this.onPreUpdate(engine, delta);
-  }
-
-  /**
-   * It is not recommended that internal excalibur methods be overriden, do so at your own risk.
-   *
-   * Internal _preupdate handler for [[onPostUpdate]] lifecycle event
-   * @internal
-   */
-  public _postupdate(engine: Engine, delta: number): void {
-    this.emit('postupdate', new PreUpdateEvent(engine, delta, this));
-    this.onPostUpdate(engine, delta);
-  }
-
   // endregion
-
-  // #region Drawing
-  /**
-   * Called by the Engine, draws the actor to the screen
-   * @param ctx   The rendering context
-   * @param delta The time since the last draw in milliseconds
-   */
-  public draw(ctx: CanvasRenderingContext2D, delta: number) {
-    ctx.save();
-    ctx.translate(this.pos.x, this.pos.y);
-    ctx.rotate(this.rotation);
-    ctx.scale(this.scale.x, this.scale.y);
-
-    // translate canvas by anchor offset
-    ctx.save();
-    ctx.translate(-(this._width * this.anchor.x), -(this._height * this.anchor.y));
-
-    this._predraw(ctx, delta);
-
-    if (this.currentDrawing) {
-      const drawing = this.currentDrawing;
-      // See https://github.com/excaliburjs/Excalibur/pull/619 for discussion on this formula
-      const offsetX = (this._width - drawing.width * drawing.scale.x) * this.anchor.x;
-      const offsetY = (this._height - drawing.height * drawing.scale.y) * this.anchor.y;
-
-      if (this._effectsDirty) {
-        this._reapplyEffects(this.currentDrawing);
-        this._effectsDirty = false;
-      }
-
-      this.currentDrawing.draw(ctx, offsetX, offsetY);
-    } else {
-      if (this.color && this.body && this.body.collider && this.body.collider.shape) {
-        this.body.collider.shape.draw(ctx, this.color, new Vector(this.width * this.anchor.x, this.height * this.anchor.y));
-      }
-    }
-    ctx.restore();
-
-    // Draw child actors
-    for (let i = 0; i < this.children.length; i++) {
-      if (this.children[i].visible) {
-        this.children[i].draw(ctx, delta);
-      }
-    }
-
-    this._postdraw(ctx, delta);
-    ctx.restore();
-  }
 
   /**
    * Safe to override onPreDraw lifecycle event handler. Synonymous with `.on('predraw', (evt) =>{...})`

@@ -1,18 +1,20 @@
 import * as Effects from './SpriteEffects';
 import { Color } from './Color';
 
-import { Drawable } from '../Interfaces/Drawable';
+import { Drawable, DrawOptions } from './Drawable';
 import { Texture } from '../Resources/Texture';
 import { Vector } from '../Algebra';
 import { Logger } from '../Util/Log';
 import { clamp } from '../Util/Util';
 import { Configurable } from '../Configurable';
+import { BoundingBox } from '../Collision/Index';
 
 /**
  * @hidden
  */
 export class SpriteImpl implements Drawable {
   private _texture: Texture;
+  private _opacity: number;
 
   public x: number = 0;
   public y: number = 0;
@@ -25,9 +27,24 @@ export class SpriteImpl implements Drawable {
     return this.height * this.scale.y;
   }
 
+  /**
+   * Local bounds of the drawing, including scale and anchoring
+   */
+  public get localBounds(): BoundingBox {
+    return new BoundingBox({
+      left: -this.drawWidth * this.anchor.x,
+      right: this.drawWidth * (1 - this.anchor.x),
+      top: -this.drawHeight * this.anchor.y,
+      bottom: this.drawHeight * (1 - this.anchor.y)
+    })
+      .rotate(this.rotation)
+      .translate(this.offset);
+  }
+
   public rotation: number = 0.0;
-  public anchor: Vector = new Vector(0.0, 0.0);
-  public scale: Vector = new Vector(1, 1);
+  public anchor: Vector = Vector.Half;
+  public offset: Vector = Vector.Zero;
+  public scale: Vector = Vector.One;
 
   public logger: Logger = Logger.getInstance();
 
@@ -80,7 +97,7 @@ export class SpriteImpl implements Drawable {
     this._spriteCanvas = document.createElement('canvas');
     this._spriteCanvas.width = width;
     this._spriteCanvas.height = height;
-    this._spriteCtx = <CanvasRenderingContext2D>this._spriteCanvas.getContext('2d'); // eslint-disable-line
+    this._spriteCtx = <CanvasRenderingContext2D>this._spriteCanvas.getContext('2d');
     this._texture.loaded
       .then(() => {
         this.width = this.width || this._texture.image.naturalWidth;
@@ -141,7 +158,8 @@ export class SpriteImpl implements Drawable {
    * Applies the [[Opacity]] effect to a sprite, setting the alpha of all pixels to a given value
    */
   public opacity(value: number) {
-    this.addEffect(new Effects.Opacity(value));
+    // this.addEffect(new Effects.Opacity(value));
+    this._opacity = value;
   }
 
   /**
@@ -291,6 +309,18 @@ export class SpriteImpl implements Drawable {
     this._applyEffects();
   }
 
+  public get loaded() {
+    return this._pixelsLoaded && this._texture.isLoaded();
+  }
+
+  /**
+   *
+   * @param _delta
+   */
+  public tick(_delta: number) {
+    // do nothing
+  }
+
   /**
    * Resets the internal state of the drawing (if any)
    */
@@ -317,29 +347,42 @@ export class SpriteImpl implements Drawable {
    * @param y    The y coordinate of where to draw
    */
   public draw(ctx: CanvasRenderingContext2D, x: number, y: number) {
+    this.drawWithOptions({ ctx, x, y });
+  }
+
+  public drawWithOptions(options: DrawOptions) {
+    const { ctx, x, y, anchor, offset, opacity } = {
+      ...options,
+      anchor: options.anchor || this.anchor,
+      offset: options.offset || this.offset,
+      opacity: options.opacity !== null || options.opacity !== undefined ? options.opacity : this._opacity
+    };
+
     if (this._dirtyEffect) {
       this._applyEffects();
     }
 
     // calculating current dimensions
     ctx.save();
-    const xpoint = this.drawWidth * this.anchor.x;
-    const ypoint = this.drawHeight * this.anchor.y;
+    const xpoint = this.drawWidth * anchor.x + offset.x;
+    const ypoint = this.drawHeight * anchor.y + offset.y;
     ctx.translate(x, y);
     ctx.rotate(this.rotation);
 
     // todo cache flipped sprites
     if (this.flipHorizontal) {
-      ctx.translate(this.drawWidth, 0);
+      //not needed? ctx.translate(this.drawWidth, 0);
       ctx.scale(-1, 1);
     }
 
     if (this.flipVertical) {
-      ctx.translate(0, this.drawHeight);
+      // not needed? ctx.translate(0, this.drawHeight);
       ctx.scale(1, -1);
     }
-
+    const oldAlpha = ctx.globalAlpha;
+    ctx.globalAlpha = opacity === null ? 1 : opacity;
     ctx.drawImage(this._spriteCanvas, 0, 0, this.width, this.height, -xpoint, -ypoint, this.drawWidth, this.drawHeight);
+    ctx.globalAlpha = oldAlpha;
 
     ctx.restore();
   }
@@ -389,4 +432,15 @@ export class Sprite extends Configurable(SpriteImpl) {
   constructor(imageOrConfig: Texture | SpriteArgs, x?: number, y?: number, width?: number, height?: number) {
     super(imageOrConfig, x, y, width, height);
   }
+}
+
+export interface SpriteOptions {
+  anchor?: Vector;
+  offset?: Vector;
+  rotation?: number;
+  scale?: Vector;
+  x?: number;
+  y?: number;
+  flipVertical?: boolean;
+  flipHorizontal?: boolean;
 }

@@ -42,6 +42,7 @@ export class DrawingSystem extends System {
    * Update is called with enities that have a transform and drawing component
    */
   update(_entities: Entity<TransformComponent | DrawingComponent>[], delta: number): void {
+    this.engine.clearScreen();
     for (const e of _entities) {
       const transform = e.components.transform;
       const drawing = e.components.drawing;
