@@ -54,6 +54,11 @@ export class Entity<T extends Component = Component> extends Class implements On
     return !this.active;
   }
 
+  constructor(components: T[] = []) {
+    super();
+    components.forEach((c) => this.addComponent(c));
+  }
+
   /**
    * The types of the components on the Entity
    */
@@ -76,13 +81,14 @@ export class Entity<T extends Component = Component> extends Class implements On
     },
     deleteProperty: (obj: any, prop: any) => {
       if (prop in obj) {
+        const componentToDelete = obj[prop];
+        delete obj[prop];
         this.changes.notifyAll(
           new RemovedComponent({
-            component: obj[prop] as Component,
+            component: componentToDelete as Component,
             entity: this
           })
         );
-        delete obj[prop];
         return true;
       }
       return false;

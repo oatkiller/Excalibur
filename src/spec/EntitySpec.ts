@@ -21,6 +21,12 @@ describe('An entity', () => {
     expect(entity2.id).not.toBe(entity3.id);
   });
 
+  it('can be constructed with a list of components', () => {
+    const entity = new ex.Entity([new FakeComponent('A'), new FakeComponent('B'), new FakeComponent('C'), new FakeComponent('D')]);
+
+    expect(entity.types).toEqual(['A', 'B', 'C', 'D']);
+  });
+
   it('can be killed', () => {
     const entity = new ex.Entity();
     expect(entity.isKilled()).toBe(false);
@@ -51,6 +57,7 @@ describe('An entity', () => {
       notify: (change) => {
         expect(change.type).toBe('Component Added');
         expect(change.data.entity).toBe(entity);
+        expect(change.data.entity.types).toEqual(['A']);
         expect(change.data.component).toBe(typeA);
         done();
       }
@@ -67,6 +74,25 @@ describe('An entity', () => {
       notify: (change) => {
         expect(change.type).toBe('Component Removed');
         expect(change.data.entity).toBe(entity);
+        expect(change.data.component).toBe(typeA);
+        done();
+      }
+    });
+    entity.removeComponent(typeA);
+  });
+
+  it('can have a component deleted, the entity will have the component removed on notify', (done) => {
+    const entity = new ex.Entity();
+    const typeA = new FakeComponent('A');
+    const typeB = new FakeComponent('B');
+
+    entity.addComponent(typeA);
+    entity.addComponent(typeB);
+    entity.changes.register({
+      notify: (change) => {
+        expect(change.type).toBe('Component Removed');
+        expect(change.data.entity).toBe(entity);
+        expect(change.data.entity.types).toEqual(['B']);
         expect(change.data.component).toBe(typeA);
         done();
       }
@@ -101,6 +127,8 @@ describe('An entity', () => {
     expect(entity.has('B')).toBe(true);
     expect(entity.has('C')).toBe(false);
   });
+
+  it;
 
   it('has an overridable initialize lifecycle handler', (done) => {
     const entity = new ex.Entity();
