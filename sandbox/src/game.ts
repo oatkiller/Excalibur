@@ -163,7 +163,8 @@ for (var i = 0; i < 36; i++) {
   //var block = new ex.Actor(currentX, 350 + Math.random() * 100, tileBlockWidth, tileBlockHeight, color);
   //block.collisionType = ex.CollisionType.Fixed;
   block.addCollisionGroup('ground');
-  block.addDrawing(Animations.Block, blockAnimation);
+  // Default animation change
+  block.addDrawing(blockAnimation);
 
   game.add(block);
 }
