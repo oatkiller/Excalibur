@@ -42,6 +42,15 @@ export class SystemManager {
     }
   }
 
+  public clearSystems() {
+    // need to walk backwards because we are modifying the collection
+    // while iterating
+    let length = this.systems.length;
+    for (let i = length - 1; i > -1; i--) {
+      this.removeSystem(this.systems[i]);
+    }
+  }
+
   /**
    * Updates all systems
    * @param engine

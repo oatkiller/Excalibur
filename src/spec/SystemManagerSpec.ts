@@ -111,4 +111,29 @@ describe('A SystemManager', () => {
       sm.addSystem(new FakeSystem(0, 'ErrorSystem', []));
     }).toThrow(new Error('Attempted to add a System without any types'));
   });
+
+  it('can clear all existing systems', () => {
+    const scene = new ex.Engine().currentScene;
+    const sm = scene.systemManager;
+    sm.clearSystems();
+    const qm = scene.queryManager;
+    const em = scene.entityManager;
+
+    const system1 = new FakeSystem(1, 'System1', ['A', 'C']);
+    const system2 = new FakeSystem(1, 'System2', ['A', 'B']);
+    const system3 = new FakeSystem(1, 'System3', ['A', 'D']);
+    const system4 = new FakeSystem(1, 'System4', ['A', 'Z']);
+    sm.addSystem(system1);
+    sm.addSystem(system2);
+    sm.addSystem(system3);
+    sm.addSystem(system4);
+
+    sm.clearSystems();
+
+    expect(sm.systems).toEqual([]);
+    expect(qm.getQuery(['A', 'C'])).toBeNull();
+    expect(qm.getQuery(['A', 'B'])).toBeNull();
+    expect(qm.getQuery(['A', 'D'])).toBeNull();
+    expect(qm.getQuery(['A', 'Z'])).toBeNull();
+  });
 });

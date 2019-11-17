@@ -201,8 +201,8 @@ export function addItemToArray<T>(item: T, array: T[]): boolean {
 }
 
 export function removeItemFromArray<T>(item: T, array: T[]): boolean {
-  let index = -1;
-  if ((index = array.indexOf(item)) > -1) {
+  let index = array.indexOf(item);
+  if (index !== -1) {
     array.splice(index, 1);
     return true;
   }
