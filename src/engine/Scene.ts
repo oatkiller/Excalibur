@@ -369,10 +369,12 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     }
 
     // Cycle through actors updating actors
+    // TODO this will be removed when ECS is fully implemented
     for (i = 0, len = this.actors.length; i < len; i++) {
       // this.actors[i].update(engine, delta);
       const actor = this.actors[i];
       if (actor instanceof Actor) {
+        actor.update(engine, delta);
         this._bodies[i] = actor.body;
       }
     }
