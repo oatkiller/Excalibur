@@ -35,6 +35,11 @@ export interface DrawingOptions {
    * Optional rotation to apply to each graphic in this component
    */
   rotation?: number;
+
+  /**
+   * Use default collider draw if no current drawable is specified, will draw the collider shape
+   */
+  useDefaultDraw?: boolean;
 }
 
 /**
@@ -54,11 +59,13 @@ export class DrawingComponent extends EventDispatcher<Entity> implements Compone
       ...options
     };
 
-    const { current, visible, graphics, offset } = options;
+    const { current, visible, graphics, offset, rotation, useDefaultDraw } = options;
 
     this._graphics = graphics || {};
     this.offset = offset || this.offset;
     this.visible = !!visible;
+    this.rotation = rotation || 0;
+    this.useDefaultDraw = typeof useDefaultDraw === 'boolean' ? useDefaultDraw : this.useDefaultDraw;
 
     if (current && this._graphics[current]) {
       this._currentDrawing = this._graphics[current];
@@ -80,6 +87,11 @@ export class DrawingComponent extends EventDispatcher<Entity> implements Compone
   public visible: boolean = true;
 
   /**
+   * Use default collider draw if no current drawable is specified, will draw the collider shape
+   */
+  public useDefaultDraw: boolean = true;
+
+  /**
    * Sets or gets wither all drawings should have an opacity, if not set drawings individual opacity is respected
    */
   public opacity?: number | null = null;
@@ -93,6 +105,8 @@ export class DrawingComponent extends EventDispatcher<Entity> implements Compone
    * Anchor to apply to all drawings in this component if set, if null the drawing's anchor is respected
    */
   public anchor?: Vector | null = null;
+
+  public rotation?: number | null = null;
 
   /**
    * Returns the currently displayed graphic, null if hidden

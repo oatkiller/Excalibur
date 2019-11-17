@@ -9,6 +9,8 @@ import { SortedList } from '../../Util/SortedList';
 import { OffscreenComponent } from '../Components/OffscreenComponent';
 import { Vector } from '../../Algebra';
 import { hasPreDraw, hasPostDraw } from '../../Interfaces/LifecycleEvents';
+import { Body } from '../../Collision/Body';
+import { Color } from '../../Drawing/Color';
 
 export class DrawingSystem extends System {
   readonly types: ComponentType[] = [BuiltinComponentType.Transform, BuiltinComponentType.Drawing];
@@ -93,6 +95,22 @@ export class DrawingSystem extends System {
               offset: drawing.offset,
               opacity: drawing.opacity
             });
+          }
+
+          if (!drawing.current && drawing.useDefaultDraw) {
+            const maybeBody: Body | null = (entity as any).body ? ((entity as any).body as Body) : null;
+            const maybeColor: Color | null = (entity as any).color ? ((entity as any).color as Color) : null;
+            if (maybeBody && maybeColor && maybeBody.collider && maybeBody.collider.shape) {
+              // const collider = maybeBody.collider;
+              maybeBody.collider.shape.draw(
+                this.ctx,
+                maybeColor,
+                new Vector(
+                  0 /*collider.shape.bounds.width * (drawing.anchor || Vector.Half).x, */,
+                  0 /*collider.shape.bounds.height * (drawing.anchor || Vector.Half).y*/
+                )
+              );
+            }
           }
 
           drawing.onPostDraw(this.ctx, delta);

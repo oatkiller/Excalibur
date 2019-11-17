@@ -57,6 +57,10 @@ export class EntityManager implements Observer<RemovedComponent | AddedComponent
     }
   }
 
+  /**
+   * Returns the entity by id, if no entity exists null is returned
+   * @param id
+   */
   public getById(id: number): Entity {
     return this._entityIndex[id];
   }

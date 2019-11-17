@@ -1,5 +1,4 @@
 import { ScreenElement } from './ScreenElement';
-import { Physics } from './Physics';
 import {
   InitializeEvent,
   ActivateEvent,
@@ -16,12 +15,11 @@ import { Logger } from './Util/Log';
 import { Timer } from './Timer';
 import { DynamicTreeCollisionBroadphase } from './Collision/DynamicTreeCollisionBroadphase';
 import { CollisionBroadphase } from './Collision/CollisionResolver';
-import { SortedList } from './Util/SortedList';
 import { Engine } from './Engine';
 import { Group } from './Group';
 import { TileMap } from './TileMap';
 import { Camera } from './Camera';
-import { Actor } from './Actor';
+import { Actor, isActor } from './Actor';
 import { Class } from './Class';
 import { CanInitialize, CanActivate, CanDeactivate, CanUpdate, CanDraw } from './Interfaces/LifecycleEvents';
 import * as Util from './Util/Util';
@@ -33,6 +31,11 @@ import { Body } from './Collision/Body';
 import { QueryManager } from './EntityComponentSystem/QueryManager';
 import { EntityManager } from './EntityComponentSystem/EntityManager';
 import { SystemManager } from './EntityComponentSystem/SystemManager';
+import { Entity } from './EntityComponentSystem/Entity';
+import { MotionSystem } from './EntityComponentSystem/Systems/MotionSystem';
+import { DrawingSystem } from './EntityComponentSystem/Systems/DrawingSystem';
+import { SystemCtor } from './EntityComponentSystem/System';
+import { Physics } from './Physics';
 /**
  * [[Actor|Actors]] are composed together into groupings called Scenes in
  * Excalibur. The metaphor models the same idea behind real world
@@ -50,8 +53,14 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
 
   /**
    * The actors in the current scene
+   * @obsolete
    */
-  public actors: Actor[] = [];
+  public actors: Entity[] = [];
+
+  /**
+   * Excalibur's default system list, override to create a new list
+   */
+  public static DefaultSystems: SystemCtor[] = [MotionSystem, DrawingSystem];
 
   public queryManager: QueryManager = new QueryManager(this);
   public entityManager: EntityManager = new EntityManager(this);
@@ -89,18 +98,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    */
   private _engine: Engine;
 
-  /**
-   * The [[ScreenElement]]s in a scene, if any; these are drawn last
-   */
-  public screenElements: Actor[] = [];
-
   private _isInitialized: boolean = false;
-
-  private _sortedDrawingTree: SortedList<Actor> = new SortedList<Actor>(Actor.prototype.getZIndex);
 
   private _broadphase: CollisionBroadphase = new DynamicTreeCollisionBroadphase();
 
-  private _killQueue: Actor[] = [];
+  private _killQueue: Entity[] = [];
   private _triggerKillQueue: Trigger[] = [];
   private _timers: Timer[] = [];
   private _cancelQueue: Timer[] = [];
@@ -113,6 +115,9 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     if (_engine) {
       this.camera.x = _engine.halfDrawWidth;
       this.camera.y = _engine.halfDrawHeight;
+    }
+    for (const SystemCtor of Scene.DefaultSystems) {
+      this.systemManager.addSystem(new SystemCtor(_engine));
     }
   }
 
@@ -350,25 +355,34 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
       timer.update(delta);
     }
 
-    // Cycle through actors updating UI actors
-    for (i = 0, len = this.screenElements.length; i < len; i++) {
-      this.screenElements[i].update(engine, delta);
-    }
-
     // Cycle through actors updating tile maps
     for (i = 0, len = this.tileMaps.length; i < len; i++) {
       this.tileMaps[i].update(engine, delta);
     }
 
-    // Cycle through actors updating actors
-    for (i = 0, len = this.actors.length; i < len; i++) {
-      this.actors[i].update(engine, delta);
-      this._bodies[i] = this.actors[i].body;
+    // TODO should this be moved into the EntityManager?
+    for (const entity of this.entityManager.entities) {
+      // Run initialize on entities
+      entity._initialize(engine);
+      // Pre update entities
+      entity._preupdate(engine, delta);
     }
 
-    // Cycle through triggers updating
-    for (i = 0, len = this.triggers.length; i < len; i++) {
-      this.triggers[i].update(engine, delta);
+    // Cycle through actors updating actors
+    for (i = 0, len = this.actors.length; i < len; i++) {
+      // this.actors[i].update(engine, delta);
+      const actor = this.actors[i];
+      if (actor instanceof Actor) {
+        this._bodies[i] = actor.body;
+      }
+    }
+
+    // Update all systems and entities
+    this.systemManager.updateSystems(engine, delta);
+
+    // Post update entities
+    for (const entity of this.entityManager.entities) {
+      entity._postupdate(engine, delta);
     }
 
     this._collectActorStats(engine);
@@ -410,7 +424,7 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     this._postupdate(engine, delta);
   }
 
-  private _processKillQueue(killQueue: Actor[], collection: Actor[]) {
+  private _processKillQueue(killQueue: Entity[], collection: Entity[]) {
     // Remove actors from scene graph after being killed
     let actorIndex: number;
     for (const killed of killQueue) {
@@ -418,7 +432,6 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
       if (killed.isKilled()) {
         actorIndex = collection.indexOf(killed);
         if (actorIndex > -1) {
-          this._sortedDrawingTree.removeByComparable(killed);
           collection.splice(actorIndex, 1);
         }
       }
@@ -445,33 +458,12 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
       this.tileMaps[i].draw(ctx, delta);
     }
 
-    const sortedChildren = this._sortedDrawingTree.list();
-    for (i = 0, len = sortedChildren.length; i < len; i++) {
-      // only draw actors that are visible and on screen
-      if (sortedChildren[i].visible && !sortedChildren[i].isOffScreen) {
-        sortedChildren[i].draw(ctx, delta);
-      }
-    }
-
     if (this._engine && this._engine.isDebug) {
       ctx.strokeStyle = 'yellow';
       this.debugDraw(ctx);
     }
 
     ctx.restore();
-
-    for (i = 0, len = this.screenElements.length; i < len; i++) {
-      // only draw ui actors that are visible and on screen
-      if (this.screenElements[i].visible) {
-        this.screenElements[i].draw(ctx, delta);
-      }
-    }
-
-    if (this._engine && this._engine.isDebug) {
-      for (i = 0, len = this.screenElements.length; i < len; i++) {
-        this.screenElements[i].debugDraw(ctx);
-      }
-    }
     this._postdraw(ctx, delta);
   }
 
@@ -489,8 +481,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
       this.tileMaps[i].debugDraw(ctx);
     }
 
-    for (i = 0, len = this.actors.length; i < len; i++) {
-      this.actors[i].debugDraw(ctx);
+    for (i = 0, len = this.entityManager.entities.length; i < len; i++) {
+      const actor = this.entityManager.entities[i];
+      if (actor instanceof Actor) {
+        actor.debugDraw(ctx);
+      }
     }
 
     for (i = 0, len = this.triggers.length; i < len; i++) {
@@ -506,8 +501,8 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   /**
    * Checks whether an actor is contained in this scene or not
    */
-  public contains(actor: Actor): boolean {
-    return this.actors.indexOf(actor) > -1;
+  public contains(entity: Entity): boolean {
+    return !!this.entityManager.getById(entity.id);
   }
 
   /**
@@ -531,22 +526,14 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    * Adds an actor to the scene, once this is done the [[Actor]] will be drawn and updated.
    * @param actor  The actor to add to the current scene
    */
-  public add(actor: Actor): void;
-
-  /**
-   * Adds a [[ScreenElement]] to the scene.
-   * @param screenElement  The ScreenElement to add to the current scene
-   */
-  public add(screenElement: ScreenElement): void;
+  public add(actor: Entity): void;
   public add(entity: any): void {
-    if (entity instanceof Actor) {
-      (<Actor>entity).unkill();
+    if (entity instanceof Entity) {
+      this.entityManager.addEntity(entity);
     }
-    if (entity instanceof ScreenElement) {
-      if (!Util.contains(this.screenElements, entity)) {
-        this.addScreenElement(entity);
-      }
-      return;
+
+    if (entity instanceof Actor) {
+      entity.unkill();
     }
 
     if (entity instanceof Actor) {
@@ -584,17 +571,10 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    * Removes an actor from the scene, it will no longer be drawn or updated.
    * @param actor  The actor to remove from the current scene.
    */
-  public remove(actor: Actor): void;
-
-  /**
-   * Removes a [[ScreenElement]] to the scene, it will no longer be drawn or updated
-   * @param screenElement  The ScreenElement to remove from the current scene
-   */
-  public remove(screenElement: ScreenElement): void;
+  public remove(actor: Entity): void;
   public remove(entity: any): void {
-    if (entity instanceof ScreenElement) {
-      this.removeScreenElement(entity);
-      return;
+    if (entity instanceof Entity) {
+      this.entityManager.removeEntity(entity.id);
     }
 
     if (entity instanceof Actor) {
@@ -610,38 +590,18 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   }
 
   /**
-   * Adds (any) actor to act as a piece of UI, meaning it is always positioned
-   * in screen coordinates. UI actors do not participate in collisions.
-   * @todo Should this be `ScreenElement` only?
-   */
-  public addScreenElement(actor: Actor) {
-    this.screenElements.push(actor);
-    actor.scene = this;
-  }
-
-  /**
-   * Removes an actor as a piece of UI
-   */
-  public removeScreenElement(actor: Actor) {
-    const index = this.screenElements.indexOf(actor);
-    if (index > -1) {
-      this.screenElements.splice(index, 1);
-    }
-  }
-
-  /**
    * Adds an actor to the scene, once this is done the actor will be drawn and updated.
    */
-  protected _addChild(actor: Actor) {
-    this._broadphase.track(actor.body);
-    actor.scene = this;
+  protected _addChild(actor: Entity) {
+    if (actor instanceof Actor) {
+      this._broadphase.track(actor.body);
+      actor.scene = this;
+    }
     if (actor instanceof Trigger) {
       this.triggers.push(actor);
     } else {
       this.actors.push(actor);
     }
-
-    this._sortedDrawingTree.add(actor);
   }
 
   /**
@@ -664,21 +624,25 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   /**
    * Removes an actor from the scene, it will no longer be drawn or updated.
    */
-  protected _removeChild(actor: Actor) {
-    if (!Util.contains(this.actors, actor)) {
+  protected _removeChild(entity: Entity) {
+    if (!Util.contains(this.actors, entity)) {
       return;
     }
-    this._broadphase.untrack(actor.body);
-    if (actor instanceof Trigger) {
-      this._triggerKillQueue.push(actor);
+    if (isActor(entity)) {
+      this._broadphase.untrack(entity.body);
+    }
+    if (entity instanceof Trigger) {
+      this._triggerKillQueue.push(entity);
     } else {
-      if (!actor.isKilled()) {
-        actor.kill();
+      if (!entity.isKilled()) {
+        entity.kill();
       }
-      this._killQueue.push(actor);
+      this._killQueue.push(entity);
     }
 
-    actor.parent = null;
+    if (isActor(entity)) {
+      entity.parent = null;
+    }
   }
 
   /**
@@ -756,27 +720,6 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     }
   }
 
-  /**
-   * Removes the given actor from the sorted drawing tree
-   */
-  public cleanupDrawTree(actor: Actor) {
-    this._sortedDrawingTree.removeByComparable(actor);
-  }
-
-  /**
-   * Updates the given actor's position in the sorted drawing tree
-   */
-  public updateDrawTree(actor: Actor) {
-    this._sortedDrawingTree.add(actor);
-  }
-
-  /**
-   * Checks if an actor is in this scene's sorted draw tree
-   */
-  public isActorInDrawTree(actor: Actor): boolean {
-    return this._sortedDrawingTree.find(actor);
-  }
-
   public isCurrentScene(): boolean {
     if (this._engine) {
       return this._engine.currentScene === this;
@@ -785,17 +728,18 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   }
 
   private _collectActorStats(engine: Engine) {
-    for (const _ui of this.screenElements) {
-      engine.stats.currFrame.actors.ui++;
-    }
-
     for (const actor of this.actors) {
+      if (actor instanceof ScreenElement) {
+        engine.stats.currFrame.actors.ui++;
+      }
       engine.stats.currFrame.actors.alive++;
-      for (const child of actor.children) {
-        if (ActorUtils.isScreenElement(child)) {
-          engine.stats.currFrame.actors.ui++;
-        } else {
-          engine.stats.currFrame.actors.alive++;
+      if (isActor(actor)) {
+        for (const child of actor.children) {
+          if (ActorUtils.isScreenElement(child)) {
+            engine.stats.currFrame.actors.ui++;
+          } else {
+            engine.stats.currFrame.actors.alive++;
+          }
         }
       }
     }

@@ -117,6 +117,7 @@ export class ActorImpl extends Entity<TransformComponent | MotionComponent | Dra
   public set body(body: Body) {
     this._body = body;
     this._body.actor = this;
+    this._body.owner = this as Entity<TransformComponent | MotionComponent>;
   }
 
   private _body: Body;
