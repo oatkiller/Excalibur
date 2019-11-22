@@ -36,6 +36,7 @@ export class EntityManager implements Observer<RemovedComponent | AddedComponent
       this.entities.push(entity);
       this._scene.queryManager.addEntity(entity);
       entity.changes.register(this);
+      entity.manager = this;
     }
   }
 
@@ -54,6 +55,7 @@ export class EntityManager implements Observer<RemovedComponent | AddedComponent
       Util.removeItemFromArray(entity, this.entities);
       this._scene.queryManager.removeEntity(entity);
       entity.changes.unregister(this);
+      entity.manager = null;
     }
   }
 

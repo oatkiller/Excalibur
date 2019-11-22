@@ -3,9 +3,11 @@ import { BuiltinComponentType, ComponentType } from '../ComponentTypes';
 import { Entity } from '../Entity';
 import { TransformComponent } from '../Components/TransformComponent';
 import { CollisionType } from '../../Collision/CollisionType';
+import { Body } from '../../Collision/Body';
 import { Physics } from '../../Physics';
 import { BodyComponent } from '../Components/BodyComponent';
 import { MotionComponent } from '../Components/MotionComponent';
+import { Actor } from '../../Actor';
 
 export class MotionSystem extends System<TransformComponent> {
   readonly types: ComponentType[] = [BuiltinComponentType.Transform, BuiltinComponentType.Motion];
@@ -15,7 +17,10 @@ export class MotionSystem extends System<TransformComponent> {
       const transform: TransformComponent = entity.components.transform;
       const motion: MotionComponent = entity.components.motion;
       // Body component can be null, since it is not part of the system types query
-      const body: BodyComponent | null = entity.components.body;
+      let body: Body | null = null;
+      if (entity instanceof Actor) {
+        body = entity.body;
+      }
 
       transform.captureOldTransform();
       motion.captureOldMotion();
@@ -39,6 +44,10 @@ export class MotionSystem extends System<TransformComponent> {
 
       motion.scaleVelocity.addEqual(motion.scaleAcceleration.scale(seconds));
       transform.scale.addEqual(motion.scaleVelocity.scale(seconds)).addEqual(motion.scaleAcceleration.scale(0.5 * seconds * seconds));
+
+      if (body && body.collider) {
+        body.collider.update();
+      }
     }
   }
 }

@@ -6,6 +6,7 @@ import { ComponentType } from './ComponentTypes';
 import { OnInitialize, OnPreUpdate, OnPostUpdate } from '../Interfaces/LifecycleEvents';
 import { Engine } from '../Engine';
 import { InitializeEvent, PreUpdateEvent, PostUpdateEvent } from '../Events';
+import { EntityManager } from './EntityManager';
 
 export interface EntityComponent {
   component: Component;
@@ -46,8 +47,13 @@ export class Entity<T extends Component = Component> extends Class implements On
    */
   public active: boolean = true;
 
+  public manager: EntityManager = null;
+
   public kill() {
     this.active = false;
+    if (this.manager) {
+      this.manager.removeEntity(this);
+    }
   }
 
   public isKilled() {

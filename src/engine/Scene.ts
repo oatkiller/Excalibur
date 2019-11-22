@@ -36,6 +36,8 @@ import { MotionSystem } from './EntityComponentSystem/Systems/MotionSystem';
 import { DrawingSystem } from './EntityComponentSystem/Systems/DrawingSystem';
 import { SystemCtor } from './EntityComponentSystem/System';
 import { Physics } from './Physics';
+import { LifetimeSystem } from './EntityComponentSystem/Systems/LifetimeSystem';
+import { ParticleSystem } from './EntityComponentSystem/Systems/ParticleSystem';
 /**
  * [[Actor|Actors]] are composed together into groupings called Scenes in
  * Excalibur. The metaphor models the same idea behind real world
@@ -60,7 +62,7 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   /**
    * Excalibur's default system list, override to create a new list
    */
-  public static DefaultSystems: SystemCtor[] = [MotionSystem, DrawingSystem];
+  public static DefaultSystems: SystemCtor[] = [MotionSystem, LifetimeSystem, ParticleSystem, DrawingSystem];
 
   public queryManager: QueryManager = new QueryManager(this);
   public entityManager: EntityManager = new EntityManager(this);
@@ -630,9 +632,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     if (!Util.contains(this.actors, entity)) {
       return;
     }
+
     if (isActor(entity)) {
       this._broadphase.untrack(entity.body);
     }
+
     if (entity instanceof Trigger) {
       this._triggerKillQueue.push(entity);
     } else {

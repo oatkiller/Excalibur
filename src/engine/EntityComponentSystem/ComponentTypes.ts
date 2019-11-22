@@ -4,6 +4,7 @@ export type ComponentType = string | BuiltinComponentType;
 export enum BuiltinComponentType {
   Transform = 'transform',
   Motion = 'motion',
+  Particle = 'particle',
   Drawing = 'drawing',
   DrawCollider = 'drawcollider',
   Action = 'action',

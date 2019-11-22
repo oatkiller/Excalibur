@@ -45,7 +45,7 @@ export interface DrawingOptions {
 /**
  * Component to manage drawings, using with the position component
  */
-export class DrawingComponent extends EventDispatcher<Entity> implements Component, OnPreDraw, OnPostDraw {
+export class DrawingComponent extends EventDispatcher<Entity> implements Component<BuiltinComponentType.Drawing>, OnPreDraw, OnPostDraw {
   public readonly type = BuiltinComponentType.Drawing;
   public owner: Entity = null;
 
