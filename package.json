@@ -35,7 +35,7 @@
     "start": "grunt watch",
     "test": "karma start",
     "apidocs": "grunt apidocs",
-    "precommit": "pretty-quick --staged && npm run eslint && npm run eslint:spec",
+    "precommit": "pretty-quick --staged",
     "pretty": "prettier --write \"{src,sandbox/src,sandbox/tests}/**/*.{ts,js,json,css,md}\" --config prettier.config.js"
   },
   "husky": {
@@ -102,6 +102,7 @@
     "typescript": "3.5.3",
     "url-loader": "2.2.0",
     "webpack": "4.41.2",
+    "webpack-bundle-analyzer": "3.6.0",
     "webpack-cli": "3.3.9"
   },
   "dependencies": {

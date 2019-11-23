@@ -9,11 +9,12 @@ import { SpriteSheet } from './Drawing/SpriteSheet';
 import * as Events from './Events';
 import { Configurable } from './Configurable';
 import { obsolete } from './Util/Decorators';
+import { OnPreDraw, OnPostDraw } from './Interfaces/LifecycleEvents';
 
 /**
  * @hidden
  */
-export class TileMapImpl extends Class {
+export class TileMapImpl extends Class implements OnPreDraw, OnPostDraw {
   private _collidingX: number = -1;
   private _collidingY: number = -1;
   private _onScreenXStart: number = 0;
@@ -37,6 +38,24 @@ export class TileMapImpl extends Class {
   public on(eventName: string, handler: (event: Events.GameEvent<any>) => void): void;
   public on(eventName: string, handler: (event: any) => void): void {
     super.on(eventName, handler);
+  }
+
+  public once(eventName: Events.preupdate, handler: (event: Events.PreUpdateEvent<TileMap>) => void): void;
+  public once(eventName: Events.postupdate, handler: (event: Events.PostUpdateEvent<TileMap>) => void): void;
+  public once(eventName: Events.predraw, handler: (event: Events.PreDrawEvent) => void): void;
+  public once(eventName: Events.postdraw, handler: (event: Events.PostDrawEvent) => void): void;
+  public once(eventName: string, handler: (event: Events.GameEvent<any>) => void): void;
+  public once(eventName: string, handler: (event: any) => void): void {
+    super.once(eventName, handler);
+  }
+
+  public off(eventName: Events.preupdate, handler?: (event: Events.PreUpdateEvent<TileMap>) => void): void;
+  public off(eventName: Events.postupdate, handler?: (event: Events.PostUpdateEvent<TileMap>) => void): void;
+  public off(eventName: Events.predraw, handler?: (event: Events.PreDrawEvent) => void): void;
+  public off(eventName: Events.postdraw, handler?: (event: Events.PostDrawEvent) => void): void;
+  public off(eventName: string, handler?: (event: Events.GameEvent<any>) => void): void;
+  public off(eventName: string, handler?: (event: any) => void): void {
+    super.off(eventName, handler);
   }
 
   /**
@@ -147,6 +166,30 @@ export class TileMapImpl extends Class {
     return null;
   }
 
+  public _predraw(ctx: CanvasRenderingContext2D, delta: number): void {
+    this.emit('predraw', new Events.PreDrawEvent(ctx, delta, this));
+    this.onPreDraw(ctx, delta);
+  }
+
+  /**
+   * It is not recommended that internal excalibur methods be overriden, do so at your own risk.
+   *
+   * Internal _postdraw handler for [[onPostDraw]] lifecycle event
+   * @internal
+   */
+  public _postdraw(ctx: CanvasRenderingContext2D, delta: number): void {
+    this.emit('postdraw', new Events.PreDrawEvent(ctx, delta, this));
+    this.onPostDraw(ctx, delta);
+  }
+
+  public onPreDraw(_ctx: CanvasRenderingContext2D, _delta: number) {
+    // Override me
+  }
+
+  public onPostDraw(_ctx: CanvasRenderingContext2D, _delta: number) {
+    // Override me
+  }
+
   public onPreUpdate(_engine: Engine, _delta: number) {
     // Override me
   }
@@ -177,7 +220,7 @@ export class TileMapImpl extends Class {
    * @param delta  The number of milliseconds since the last draw
    */
   public draw(ctx: CanvasRenderingContext2D, delta: number) {
-    this.emit('predraw', new Events.PreDrawEvent(ctx, delta, this));
+    this._predraw(ctx, delta);
 
     ctx.save();
     ctx.translate(this.x, this.y);
@@ -203,7 +246,8 @@ export class TileMapImpl extends Class {
           if (ss) {
             const sprite = ss.getSprite(cs[csi].spriteId);
             if (sprite) {
-              sprite.draw(ctx, x * this.cellWidth, y * this.cellHeight);
+              const zero = Vector.Zero;
+              sprite.drawWithOptions({ ctx, x: x * this.cellWidth, y: y * this.cellHeight, anchor: zero });
             } else {
               this.logger.warn('Sprite does not exist for id', cs[csi].spriteId, 'in sprite sheet', cs[csi].spriteSheetKey, sprite, ss);
             }
@@ -216,7 +260,7 @@ export class TileMapImpl extends Class {
     }
     ctx.restore();
 
-    this.emit('postdraw', new Events.PostDrawEvent(ctx, delta, this));
+    this._postdraw(ctx, delta);
   }
 
   /**

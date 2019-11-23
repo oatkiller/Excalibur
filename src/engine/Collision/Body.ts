@@ -9,6 +9,8 @@ import { Entity } from '../EntityComponentSystem/Entity';
 import { CollisionShape } from './CollisionShape';
 import { MotionComponent } from '../EntityComponentSystem/Components/MotionComponent';
 import { TransformComponent } from '../EntityComponentSystem/Components/TransformComponent';
+import { CollisionType } from './CollisionType';
+import { Physics } from '../Physics';
 
 export interface BodyOptions {
   /**
@@ -33,6 +35,7 @@ export class Body implements Clonable<Body> {
   private _collider: Collider;
   public actor: Actor;
   public owner: Entity<TransformComponent | MotionComponent>;
+  public allowRotation: boolean = true;
 
   private get motion(): MotionComponent {
     return this.owner.components.motion;
@@ -174,6 +177,10 @@ export class Body implements Clonable<Body> {
     return this.transform.rotation;
   }
 
+  public set rotation(rotation: number) {
+    this.transform.rotation = rotation;
+  }
+
   /**
    * The scale vector of the actor
    * @obsolete ex.Body.scale will be removed in v0.24.0
@@ -268,24 +275,24 @@ export class Body implements Clonable<Body> {
   /**
    * Perform euler integration at the specified time step
    */
-  public integrate(_delta: number) {
+  public integrate(delta: number) {
     // Update placements based on linear algebra
-    // const seconds = delta / 1000;
+    const seconds = delta / 1000;
 
-    // const totalAcc = this.acc.clone();
-    // // Only active vanilla actors are affected by global acceleration
-    // if (this.collider && this.collider.type === CollisionType.Active) {
-    //   totalAcc.addEqual(Physics.acc);
-    // }
+    const totalAcc = this.acc.clone();
+    // Only active vanilla actors are affected by global acceleration
+    if (this.collider && this.collider.type === CollisionType.Active) {
+      totalAcc.addEqual(Physics.acc);
+    }
 
-    // this.vel.addEqual(totalAcc.scale(seconds));
-    // this.pos.addEqual(this.vel.scale(seconds)).addEqual(totalAcc.scale(0.5 * seconds * seconds));
+    this.vel.addEqual(totalAcc.scale(seconds));
+    this.pos.addEqual(this.vel.scale(seconds)).addEqual(totalAcc.scale(0.5 * seconds * seconds));
 
-    // this.rx += this.torque * (1.0 / this.collider.inertia) * seconds;
-    // this.rotation += this.rx * seconds;
+    this.rx += this.torque * (1.0 / this.collider.inertia) * seconds;
+    this.rotation += this.rx * seconds;
 
-    // this.scale.x += (this.sx * delta) / 1000;
-    // this.scale.y += (this.sy * delta) / 1000;
+    this.scale.x += (this.sx * delta) / 1000;
+    this.scale.y += (this.sy * delta) / 1000;
 
     if (!this.scale.equals(this.oldScale)) {
       // change in scale effects the geometry

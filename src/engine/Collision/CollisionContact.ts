@@ -44,6 +44,21 @@ export class CollisionContact {
     this.normal = normal;
   }
 
+  applyMtv() {
+    const scaledMtv = this.mtv.scale(0.95);
+    if (this.colliderA.type === CollisionType.Fixed) {
+      this.colliderB.body.addMtv(scaledMtv);
+    } else if (this.colliderB.type === CollisionType.Fixed) {
+      this.colliderA.body.addMtv(scaledMtv.negate());
+    } else {
+      // Split the mtv in half for the two bodies, potentially we could do something smarter here
+      this.colliderB.body.addMtv(scaledMtv.scale(0.5));
+      this.colliderA.body.addMtv(scaledMtv.scale(-0.5));
+    }
+    this.colliderA.body.applyMtv();
+    this.colliderB.body.applyMtv();
+  }
+
   resolve(strategy: CollisionResolutionStrategy) {
     if (strategy === CollisionResolutionStrategy.RigidBody) {
       this._resolveRigidBodyCollision();
@@ -155,13 +170,13 @@ export class CollisionContact {
 
     if (this.colliderA.type === CollisionType.Fixed) {
       bodyB.vel = bodyB.vel.add(normal.scale(impulse * invMassB));
-      if (Physics.allowRigidBodyRotation) {
+      if (Physics.allowRigidBodyRotation || bodyB.allowRotation) {
         bodyB.rx -= impulse * invMoiB * -rb.cross(normal);
       }
       bodyB.addMtv(mtv);
     } else if (this.colliderB.type === CollisionType.Fixed) {
       bodyA.vel = bodyA.vel.sub(normal.scale(impulse * invMassA));
-      if (Physics.allowRigidBodyRotation) {
+      if (Physics.allowRigidBodyRotation || bodyA.allowRotation) {
         bodyA.rx += impulse * invMoiA * -ra.cross(normal);
       }
       bodyA.addMtv(mtv.negate());
@@ -170,8 +185,12 @@ export class CollisionContact {
       bodyA.vel = bodyA.vel.sub(normal.scale(impulse * invMassA));
 
       if (Physics.allowRigidBodyRotation) {
-        bodyB.rx -= impulse * invMoiB * -rb.cross(normal);
-        bodyA.rx += impulse * invMoiA * -ra.cross(normal);
+        if (bodyB.allowRotation) {
+          bodyB.rx -= impulse * invMoiB * -rb.cross(normal);
+        }
+        if (bodyA.allowRotation) {
+          bodyA.rx += impulse * invMoiA * -ra.cross(normal);
+        }
       }
 
       // Split the mtv in half for the two bodies, potentially we could do something smarter here

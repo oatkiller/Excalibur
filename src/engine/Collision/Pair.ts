@@ -66,6 +66,12 @@ export class Pair {
     }
   }
 
+  public applyMtv() {
+    if (this.collision) {
+      this.collision.applyMtv();
+    }
+  }
+
   /**
    * Calculates the unique pair hash id for this collision pair
    */

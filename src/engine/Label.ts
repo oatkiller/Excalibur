@@ -199,11 +199,7 @@ export class LabelImpl extends Actor {
    * over a css font.
    */
   constructor(textOrConfig?: string | Partial<LabelImpl>, x?: number, y?: number, fontFamily?: string, spriteFont?: SpriteFont) {
-    super(
-      textOrConfig && typeof textOrConfig === 'object'
-        ? { x: textOrConfig.x, y: textOrConfig.y }
-        : { x: x, y: y }
-    );
+    super(textOrConfig && typeof textOrConfig === 'object' ? { x: textOrConfig.x, y: textOrConfig.y } : { x: x, y: y });
 
     let text = '';
     if (textOrConfig && typeof textOrConfig === 'object') {
@@ -338,11 +334,12 @@ export class LabelImpl extends Actor {
     super.update(engine, delta);
   }
 
-  public draw(ctx: CanvasRenderingContext2D, delta: number) {
+  public _predraw(ctx: CanvasRenderingContext2D, delta: number) {
     ctx.save();
     ctx.translate(this.pos.x, this.pos.y);
     ctx.scale(this.scale.x, this.scale.y);
     ctx.rotate(this.rotation);
+    super._predraw(ctx, delta);
 
     if (this._textShadowOn) {
       ctx.save();
@@ -352,7 +349,6 @@ export class LabelImpl extends Actor {
     }
     this._fontDraw(ctx);
 
-    super.draw(ctx, delta);
     ctx.restore();
   }
 
