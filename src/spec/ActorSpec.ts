@@ -17,6 +17,7 @@ describe('A game actor', () => {
     actor.body.collider.type = ex.CollisionType.Active;
     scene = new ex.Scene(engine);
     engine.currentScene = scene;
+    actor._initialize(engine);
 
     spyOn(scene, 'draw').and.callThrough();
     spyOn(scene, 'debugDraw').and.callThrough();
@@ -295,11 +296,11 @@ describe('A game actor', () => {
     let actorCalled = 'false';
     let otherCalled = 'false';
 
-    actor.on('precollision', function() {
+    actor.on('precollision', function () {
       actorCalled = 'actor';
     });
 
-    other.on('precollision', function() {
+    other.on('precollision', function () {
       otherCalled = 'other';
     });
 

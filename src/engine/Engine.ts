@@ -3,7 +3,6 @@ import { polyfill } from './Polyfill';
 polyfill();
 import { CanUpdate, CanDraw, CanInitialize } from './Interfaces/LifecycleEvents';
 import { Loadable } from './Interfaces/Loadable';
-import { Promise } from './Promises';
 import { Vector } from './Algebra';
 import { ScreenElement } from './ScreenElement';
 import { Actor } from './Actor';
@@ -28,7 +27,6 @@ import {
   PostDrawEvent,
   InitializeEvent
 } from './Events';
-import { CanLoad } from './Interfaces/Loader';
 import { Logger, LogLevel } from './Util/Log';
 import { Color } from './Drawing/Color';
 import { Scene } from './Scene';
@@ -39,6 +37,10 @@ import * as Input from './Input/Index';
 import * as Events from './Events';
 import { BoundingBox } from './Collision/BoundingBox';
 import { BrowserEvents } from './Util/Browser';
+import { ExcaliburGraphicsContext } from './Graphics/Context/ExcaliburGraphicsContext';
+import { ExcaliburGraphicsContextWebGL } from './Graphics/Context/ExcaliburGraphicsContextWebGL';
+import { ExcaliburGraphicsContext2DCanvas } from './Graphics/Context/ExcaliburGraphicsContext2DCanvas';
+import { Entity } from './Entity';
 
 /**
  * Enum representing the different display modes available to Excalibur
@@ -203,6 +205,14 @@ export class Engine extends Class implements CanInitialize, CanUpdate, CanDraw {
    */
   public ctx: CanvasRenderingContext2D;
 
+  public static _useWebGL: boolean = false;
+  public static _useLegacyDrawing: boolean = false;
+
+  /**
+   * Direct access to the excalibur graphics context
+   */
+  public graphicsContext: ExcaliburGraphicsContext;
+
   /**
    * Direct access to the canvas element ID, if an ID exists
    */
@@ -333,6 +343,8 @@ export class Engine extends Class implements CanInitialize, CanUpdate, CanDraw {
   private _suppressHiDPIScaling: boolean = false;
 
   private _suppressPlayButton: boolean = false;
+
+  // TODO Move this to canvas utilities
   /**
    * Returns the calculated pixel ration for use in rendering
    */
@@ -399,7 +411,7 @@ export class Engine extends Class implements CanInitialize, CanUpdate, CanDraw {
   private _timescale: number = 1.0;
 
   // loading
-  private _loader: CanLoad;
+  private _loader: Loader;
   private _isLoading: boolean = false;
 
   private _isInitialized: boolean = false;
@@ -509,7 +521,7 @@ export class Engine extends Class implements CanInitialize, CanUpdate, CanDraw {
       message.innerText = 'Sorry, your browser does not support all the features needed for Excalibur';
       document.body.appendChild(message);
 
-      detector.failedTests.forEach(function(test) {
+      detector.failedTests.forEach(function (test) {
         const testMessage = document.createElement('div');
         testMessage.innerText = 'Browser feature missing ' + test;
         document.body.appendChild(testMessage);
@@ -758,13 +770,19 @@ O|===|* >________________>\n\
    * @param screenElement  The ScreenElement to add to the [[currentScene]]
    */
   public add(screenElement: ScreenElement): void;
+  /**
+   * Adds an [[Entity]] to the [[currentScene]] of the game
+   */
+  public add(entity: Entity): void;
   public add(entity: any): void {
     if (entity instanceof ScreenElement) {
       this.currentScene.addScreenElement(entity);
+      this.currentScene.addEntity(entity);
       return;
     }
     if (entity instanceof Actor) {
       this._addChild(entity);
+      this.currentScene.addEntity(entity);
     }
     if (entity instanceof Timer) {
       this.addTimer(entity);
@@ -811,13 +829,19 @@ O|===|* >________________>\n\
    * @param screenElement  The ScreenElement to remove from the [[currentScene]]
    */
   public remove(screenElement: ScreenElement): void;
+  /**
+   * Removes an [[Entity]] from the [[currentScene]] of the game.
+   */
+  public remove(entity: Entity): void;
   public remove(entity: any): void {
     if (entity instanceof ScreenElement) {
       this.currentScene.removeScreenElement(entity);
+      this.currentScene.removeEntity(entity);
       return;
     }
     if (entity instanceof Actor) {
       this._removeChild(entity);
+      this.currentScene.removeEntity(entity);
     }
     if (entity instanceof Timer) {
       this.removeTimer(entity);
@@ -1021,12 +1045,32 @@ O|===|* >________________>\n\
       }
     });
 
-    // eslint-disable-next-line
-    this.ctx = <CanvasRenderingContext2D>this.canvas.getContext('2d', { alpha: this.enableCanvasTransparency });
-
     this._suppressHiDPIScaling = !!options.suppressHiDPIScaling;
     if (!options.suppressHiDPIScaling) {
       this._initializeHiDpi();
+    }
+
+    if (!Engine._useWebGL) {
+      this.ctx = this.canvas.getContext('2d', { alpha: this.enableCanvasTransparency });
+      this.graphicsContext = new ExcaliburGraphicsContext2DCanvas(this.ctx);
+    } else {
+      // TODO remove hacked canvas to keep things working
+      const canvas = document.createElement('canvas');
+      this.ctx = canvas.getContext('2d', { alpha: this.enableCanvasTransparency });
+      // TODO end hack
+
+      const gl = this.canvas.getContext('webgl', {
+        antialias: false,
+        premultipliedAlpha: false,
+        alpha: this.enableCanvasTransparency,
+        depth: false,
+        powerPreference: 'high-performance'
+      });
+      this.graphicsContext = new ExcaliburGraphicsContextWebGL(gl);
+    }
+
+    if (this.isHiDpi) {
+      this.graphicsContext.scale(this.pixelRatio, this.pixelRatio);
     }
 
     if (!this.canvasElementId && !options.canvasElement) {
@@ -1122,7 +1166,7 @@ O|===|* >________________>\n\
                            ${oldWidth}x${oldHeight} to ${this.canvas.width}x${this.canvas.height} 
                            css size will remain ${oldWidth}x${oldHeight}`);
 
-      this.ctx.scale(this.pixelRatio, this.pixelRatio);
+      // this.graphicsContext.scale(this.pixelRatio, this.pixelRatio);
       this._logger.warn(`Canvas drawing context was scaled by ${this.pixelRatio}`);
     }
   }
@@ -1196,7 +1240,7 @@ O|===|* >________________>\n\
     this.currentScene.update(this, delta);
 
     // update animations
-    this._animations = this._animations.filter(function(a) {
+    this._animations = this._animations.filter(function (a) {
       return !a.animation.isDone();
     });
 
@@ -1242,14 +1286,16 @@ O|===|* >________________>\n\
     this._predraw(ctx, delta);
 
     if (this._isLoading) {
-      this._loader.draw(ctx, delta);
+      this._loader.canvas.draw(this.graphicsContext, 0, 0);
+      this.graphicsContext.flush();
       // Drawing nothing else while loading
       return;
     }
 
-    ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-    ctx.fillStyle = this.backgroundColor.toString();
-    ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.graphicsContext.backgroundColor = this.backgroundColor;
+    // ctx.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    // ctx.fillStyle = this.backgroundColor.toString();
+    // ctx.fillRect(0, 0, this.canvasWidth, this.canvasHeight);
 
     this.currentScene.draw(this.ctx, delta);
 
@@ -1276,7 +1322,6 @@ O|===|* >________________>\n\
     for (let i = 0; i < this.postProcessors.length; i++) {
       this.postProcessors[i].process(this.ctx.getImageData(0, 0, this.canvasWidth, this.canvasHeight), this.ctx);
     }
-
     this._postdraw(ctx, delta);
   }
 
@@ -1310,10 +1355,9 @@ O|===|* >________________>\n\
    * @param loader  Optional [[Loader]] to use to load resources. The default loader is [[Loader]], override to provide your own
    * custom loader.
    */
-  public start(loader?: CanLoad): Promise<any> {
+  public start(loader?: Loader): Promise<any> {
     if (!this._compatible) {
-      const promise = new Promise();
-      return promise.reject('Excalibur is incompatible with your browser');
+      return Promise.reject('Excalibur is incompatible with your browser');
     }
 
     let loadingComplete: Promise<any>;
@@ -1431,21 +1475,21 @@ O|===|* >________________>\n\
    * @param loader  Some [[Loadable]] such as a [[Loader]] collection, [[Sound]], or [[Texture]].
    */
   public load(loader: Loadable): Promise<any> {
-    const complete = new Promise<any>();
+    const complete = new Promise<any>((resolve) => {
+      this._isLoading = true;
 
-    this._isLoading = true;
-
-    loader.load().then(() => {
-      if (this._suppressPlayButton) {
-        setTimeout(() => {
+      loader.load().then(() => {
+        if (this._suppressPlayButton) {
+          setTimeout(() => {
+            this._isLoading = false;
+            resolve();
+            // Delay is to give the logo a chance to show, otherwise don't delay
+          }, 500);
+        } else {
           this._isLoading = false;
-          complete.resolve();
-          // Delay is to give the logo a chance to show, otherwise don't delay
-        }, 500);
-      } else {
-        this._isLoading = false;
-        complete.resolve();
-      }
+          resolve();
+        }
+      });
     });
 
     return complete;

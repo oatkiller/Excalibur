@@ -1,7 +1,6 @@
 import { Color } from './Drawing/Color';
 import { WebAudio } from './Util/WebAudio';
 import { Logger } from './Util/Log';
-import { Promise, PromiseState } from './Promises';
 import { Engine } from './Engine';
 import { Loadable } from './Interfaces/Loadable';
 import { CanLoad } from './Interfaces/Loader';
@@ -10,6 +9,7 @@ import * as DrawUtil from './Util/DrawUtil';
 
 import logoImg from './Loader.logo.png';
 import loaderCss from './Loader.css';
+import { Canvas } from './Graphics/Canvas';
 
 /**
  * Pre-loading assets
@@ -77,7 +77,10 @@ import loaderCss from './Loader.css';
  * ```
  */
 export class Loader extends Class implements CanLoad {
-  private _resourceList: Loadable[] = [];
+  public canvas: Canvas = new Canvas({
+    drawHandler: this.draw.bind(this)
+  });
+  private _resourceList: Loadable<any>[] = [];
   private _index = 0;
 
   private _playButtonShown: boolean = false;
@@ -148,7 +151,7 @@ export class Loader extends Class implements CanLoad {
   /**
    * @param loadables  Optionally provide the list of resources you want to load at constructor time
    */
-  constructor(loadables?: Loadable[]) {
+  constructor(loadables?: Loadable<any>[]) {
     super();
 
     if (loadables) {
@@ -158,6 +161,8 @@ export class Loader extends Class implements CanLoad {
 
   public wireEngine(engine: Engine) {
     this._engine = engine;
+    this.canvas.width = this._engine.canvas.width;
+    this.canvas.height = this._engine.canvas.height;
   }
 
   /**
@@ -201,11 +206,11 @@ export class Loader extends Class implements CanLoad {
     } else {
       this._playButtonShown = true;
       this._playButton.style.display = 'block';
-      const promise = new Promise();
-
-      this._playButton.addEventListener('click', () => (promise.state() === PromiseState.Pending ? promise.resolve() : promise));
-      this._playButton.addEventListener('touchend', () => (promise.state() === PromiseState.Pending ? promise.resolve() : promise));
-      this._playButton.addEventListener('pointerup', () => (promise.state() === PromiseState.Pending ? promise.resolve() : promise));
+      const promise = new Promise((resolve) => {
+        this._playButton.addEventListener('click', () => resolve());
+        this._playButton.addEventListener('touchend', () => resolve());
+        this._playButton.addEventListener('pointerup', () => resolve());
+      });
 
       return promise;
     }
@@ -221,72 +226,72 @@ export class Loader extends Class implements CanLoad {
    * that resolves when loading of all is complete
    */
   public load(): Promise<any> {
-    const complete = new Promise<any>();
-    const me = this;
-    if (this._resourceList.length === 0) {
-      me.showPlayButton().then(() => {
-        // Unlock audio context in chrome after user gesture
-        // https://github.com/excaliburjs/Excalibur/issues/262
-        // https://github.com/excaliburjs/Excalibur/issues/1031
-        WebAudio.unlock().then(() => {
-          me.hidePlayButton();
-          me.oncomplete.call(me);
-          complete.resolve();
+    const complete = new Promise<any>((resolve) => {
+      const me = this;
+      if (this._resourceList.length === 0) {
+        me.showPlayButton().then(() => {
+          // Unlock audio context in chrome after user gesture
+          // https://github.com/excaliburjs/Excalibur/issues/262
+          // https://github.com/excaliburjs/Excalibur/issues/1031
+          WebAudio.unlock().then(() => {
+            me.hidePlayButton();
+            me.oncomplete.call(me);
+            resolve();
+          });
         });
-      });
-      return complete;
-    }
-
-    const progressArray = new Array<any>(this._resourceList.length);
-    const progressChunks = this._resourceList.length;
-
-    this._resourceList.forEach((r, i) => {
-      if (this._engine) {
-        r.wireEngine(this._engine);
-      }
-      r.onprogress = function(e) {
-        const total = <number>e.total;
-        const loaded = <number>e.loaded;
-        progressArray[i] = { loaded: (loaded / total) * (100 / progressChunks), total: 100 };
-
-        const progressResult: any = progressArray.reduce(
-          function(accum, next) {
-            return { loaded: accum.loaded + next.loaded, total: 100 };
-          },
-          { loaded: 0, total: 100 }
-        );
-
-        me.onprogress.call(me, progressResult);
-      };
-      r.oncomplete = r.onerror = function() {
-        me._numLoaded++;
-        if (me._numLoaded === me._resourceCount) {
-          setTimeout(() => {
-            me.showPlayButton().then(() => {
-              // Unlock audio context in chrome after user gesture
-              // https://github.com/excaliburjs/Excalibur/issues/262
-              // https://github.com/excaliburjs/Excalibur/issues/1031
-              WebAudio.unlock().then(() => {
-                me.hidePlayButton();
-                me.oncomplete.call(me);
-                complete.resolve();
-              });
-            });
-          }, 200); // short delay in showing the button for aesthetics
-        }
-      };
-    });
-
-    function loadNext(list: Loadable[], index: number) {
-      if (!list[index]) {
         return;
       }
-      list[index].load().then(function() {
-        loadNext(list, index + 1);
-      });
-    }
-    loadNext(this._resourceList, 0);
 
+      const progressArray = new Array<any>(this._resourceList.length);
+      const progressChunks = this._resourceList.length;
+
+      this._resourceList.forEach((r, i) => {
+        if (this._engine) {
+          r.wireEngine(this._engine);
+        }
+        r.onprogress = function (e) {
+          const total = <number>e.total;
+          const loaded = <number>e.loaded;
+          progressArray[i] = { loaded: (loaded / total) * (100 / progressChunks), total: 100 };
+
+          const progressResult: any = progressArray.reduce(
+            function (accum, next) {
+              return { loaded: accum.loaded + next.loaded, total: 100 };
+            },
+            { loaded: 0, total: 100 }
+          );
+
+          me.onprogress.call(me, progressResult);
+        };
+        r.oncomplete = r.onerror = function () {
+          me._numLoaded++;
+          if (me._numLoaded === me._resourceCount) {
+            setTimeout(() => {
+              me.showPlayButton().then(() => {
+                // Unlock audio context in chrome after user gesture
+                // https://github.com/excaliburjs/Excalibur/issues/262
+                // https://github.com/excaliburjs/Excalibur/issues/1031
+                WebAudio.unlock().then(() => {
+                  me.hidePlayButton();
+                  me.oncomplete.call(me);
+                  resolve();
+                });
+              });
+            }, 200); // short delay in showing the button for aesthetics
+          }
+        };
+      });
+
+      function loadNext(list: Loadable[], index: number) {
+        if (!list[index]) {
+          return;
+        }
+        list[index].load().then(function () {
+          loadNext(list, index + 1);
+        });
+      }
+      loadNext(this._resourceList, 0);
+    });
     return complete;
   }
 
@@ -300,8 +305,8 @@ export class Loader extends Class implements CanLoad {
     const canvasWidth = this._engine.canvasWidth / this._engine.pixelRatio;
 
     if (this._playButtonRootElement) {
-      const left = ctx.canvas.offsetLeft;
-      const top = ctx.canvas.offsetTop;
+      const left = this._engine.canvas.offsetLeft;
+      const top = this._engine.canvas.offsetTop;
       const buttonWidth = this._playButton.clientWidth;
       const buttonHeight = this._playButton.clientHeight;
       this._playButtonRootElement.style.left = `${left + canvasWidth / 2 - buttonWidth / 2}px`;
@@ -332,7 +337,7 @@ export class Loader extends Class implements CanLoad {
     const margin = 5;
     const progressWidth = progress - margin * 2;
     const height = 20 - margin * 2;
-    DrawUtil.roundRect(ctx, x + margin, y + margin, progressWidth > 0 ? progressWidth : 0, height, 5, null, Color.White);
+    DrawUtil.roundRect(ctx, x + margin, y + margin, progressWidth > 10 ? progressWidth : 10, height, 5, null, Color.White);
     this._engine.setAntialiasing(oldAntialias);
   }
 

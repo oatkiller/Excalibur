@@ -28,6 +28,7 @@ export interface PromiseLike<T> {
  * sounds, animation, actions, and more.
  *
  * [[include:Promises.md]]
+ * @obsolete Use native promises in favor of Excalibur's promise implementation
  */
 export class Promise<T> implements PromiseLike<T> {
   private _state: PromiseState = PromiseState.Pending;
@@ -127,7 +128,7 @@ export class Promise<T> implements PromiseLike<T> {
     if (successCallback) {
       this._successCallbacks.push(successCallback);
 
-      // If the promise is already resolved call immediately
+      // If the promise is already resovled call immediately
       if (this.state() === PromiseState.Resolved) {
         try {
           successCallback.call(this, this._value);

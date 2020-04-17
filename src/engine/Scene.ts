@@ -28,6 +28,11 @@ import * as Events from './Events';
 import * as ActorUtils from './Util/Actors';
 import { Trigger } from './Trigger';
 import { Body } from './Collision/Body';
+import { ExcaliburGraphicsContext, GraphicsComponent } from './Graphics';
+import { GraphicsSystem } from './Graphics/GraphicsSystem';
+import { Entity } from './Entity';
+import { TransformComponent } from './Transform';
+import { ParticleEmitter } from './Particles';
 /**
  * [[Actor|Actors]] are composed together into groupings called Scenes in
  * Excalibur. The metaphor models the same idea behind real world
@@ -49,6 +54,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   public actors: Actor[] = [];
 
   /**
+   * The entities in the current scene
+   */
+  public entities: Entity[] = [];
+
+  /**
    * Physics bodies in the current scene
    */
   private _bodies: Body[] = [];
@@ -67,6 +77,9 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    * Access to the Excalibur engine
    */
   private _engine: Engine;
+
+  private _graphicsSystem: GraphicsSystem;
+  private _graphicsContext: ExcaliburGraphicsContext;
 
   /**
    * The [[ScreenElement]]s in a scene, if any; these are drawn last
@@ -223,6 +236,8 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
   public _initialize(engine: Engine) {
     if (!this.isInitialized) {
       this._engine = engine;
+      this._graphicsContext = engine.graphicsContext;
+      this._graphicsSystem = new GraphicsSystem(this._graphicsContext, this);
       if (this.camera) {
         this.camera.x = engine.halfDrawWidth;
         this.camera.y = engine.halfDrawHeight;
@@ -404,6 +419,24 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     killQueue.length = 0;
   }
 
+  private _getTileMapCells() {
+    let cells: Entity<TransformComponent | GraphicsComponent>[] = [];
+    let i: number, len: number;
+    for (i = 0, len = this.tileMaps.length; i < len; i++) {
+      cells = cells.concat(this.tileMaps[i].getCellsOnScreen());
+    }
+    return cells;
+  }
+
+  private _getParticles() {
+    let emitters: ParticleEmitter[] = this.actors.filter((a) => a instanceof ParticleEmitter) as ParticleEmitter[];
+    let particles: Entity<TransformComponent | GraphicsComponent>[] = [];
+    for (let e of emitters) {
+      particles = particles.concat(e.particles.toArray());
+    }
+    return particles;
+  }
+
   /**
    * Draws all the actors in the Scene. Called by the [[Engine]].
    * @param ctx    The current rendering context
@@ -413,8 +446,29 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     this._predraw(ctx, delta);
     ctx.save();
 
+    if (Engine._useLegacyDrawing) {
+      this.__legacyDraw(ctx, delta);
+    } else {
+      // TODO with ECS this will be more formalized using the entity manager
+
+      let entities = (this.entities as Entity<TransformComponent | GraphicsComponent>[])
+        .concat(this._getParticles())
+        .concat(this._getTileMapCells());
+      this._graphicsSystem.update(entities, delta);
+    }
+
+    ctx.restore();
+    this._postdraw(ctx, delta);
+  }
+
+  public __legacyDraw(ctx: CanvasRenderingContext2D, delta: number) {
+    this._graphicsContext.clear();
+
+    this._predraw(ctx, delta);
+    ctx.save();
+
     if (this.camera) {
-      this.camera.draw(ctx);
+      this.camera.draw(this._graphicsContext);
     }
 
     let i: number, len: number;
@@ -516,6 +570,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    * @param screenElement  The ScreenElement to add to the current scene
    */
   public add(screenElement: ScreenElement): void;
+  /**
+   * Adds an [[Entity]] to the scene.
+   * @param entity
+   */
+  public add(entity: Entity): void;
   public add(entity: any): void {
     if (entity instanceof Actor) {
       (<Actor>entity).unkill();
@@ -523,6 +582,7 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     if (entity instanceof ScreenElement) {
       if (!Util.contains(this.screenElements, entity)) {
         this.addScreenElement(entity);
+        this.addEntity(entity);
       }
       return;
     }
@@ -530,9 +590,11 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
     if (entity instanceof Actor) {
       if (!Util.contains(this.actors, entity)) {
         this._addChild(entity);
+        this.addEntity(entity);
       }
       return;
     }
+
     if (entity instanceof Timer) {
       if (!Util.contains(this._timers, entity)) {
         this.addTimer(entity);
@@ -569,21 +631,44 @@ export class Scene extends Class implements CanInitialize, CanActivate, CanDeact
    * @param screenElement  The ScreenElement to remove from the current scene
    */
   public remove(screenElement: ScreenElement): void;
+  /**
+   * Removes an [[Entity]] from the the scene
+   * @param entity
+   */
+  public remove(entity: Entity): void;
   public remove(entity: any): void {
     if (entity instanceof ScreenElement) {
       this.removeScreenElement(entity);
+      this.removeEntity(entity);
       return;
     }
 
     if (entity instanceof Actor) {
       this._removeChild(entity);
+      this.removeEntity(entity);
     }
+
+    if (entity instanceof Entity) {
+      this.removeEntity(entity);
+    }
+
     if (entity instanceof Timer) {
       this.removeTimer(entity);
     }
 
     if (entity instanceof TileMap) {
       this.removeTileMap(entity);
+    }
+  }
+
+  public addEntity(entity: Entity) {
+    this.entities.push(entity);
+  }
+
+  public removeEntity(entity: Entity) {
+    const index = this.entities.indexOf(entity);
+    if (index > -1) {
+      this.entities.splice(index, 1);
     }
   }
 

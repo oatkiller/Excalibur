@@ -63,10 +63,10 @@ export class SpriteSheetImpl {
     if (this.image instanceof Texture) {
       let isWidthError: boolean = false;
       let isHeightError: boolean = false;
-      this.image.loaded.then((image: HTMLImageElement) => {
-        isWidthError = this.spWidth * this.columns > image.naturalWidth;
-        isHeightError = this.spHeight * this.rows > image.naturalHeight;
-      });
+      if (this.image.isLoaded()) {
+        isWidthError = this.spWidth * this.columns > this.image.image.naturalWidth;
+        isHeightError = this.spHeight * this.rows > this.image.image.naturalHeight;
+      }
       if (isWidthError) {
         throw new RangeError(
           `SpriteSheet specified is wider, ` +
@@ -110,7 +110,7 @@ export class SpriteSheetImpl {
       return this.sprites[index];
     });
 
-    images = images.map(function(i) {
+    images = images.map(function (i) {
       return i.clone();
     });
     return new Animation(engine, images, speed);
@@ -127,7 +127,7 @@ export class SpriteSheetImpl {
    */
   public getAnimationBetween(engine: Engine, beginIndex: number, endIndex: number, speed: number) {
     let images = this.sprites.slice(beginIndex, endIndex);
-    images = images.map(function(i) {
+    images = images.map(function (i) {
       return i.clone();
     });
     return new Animation(engine, images, speed);
@@ -140,7 +140,7 @@ export class SpriteSheetImpl {
    * @param speed   The number in milliseconds to display each frame the animation
    */
   public getAnimationForAll(engine: Engine, speed: number) {
-    const sprites = this.sprites.map(function(i) {
+    const sprites = this.sprites.map(function (i) {
       return i.clone();
     });
     return new Animation(engine, sprites, speed);
@@ -259,15 +259,15 @@ export class SpriteFontImpl extends SpriteSheet {
     spacing?: number
   ) {
     super(
-      imageOrConfig instanceof Texture ?
-        {
-          image: imageOrConfig,
-          spWidth: spWidth,
-          spHeight: spHeight,
-          rows: rows,
-          columns: columns,
-          spacing: spacing || 0
-        }
+      imageOrConfig instanceof Texture
+        ? {
+            image: imageOrConfig,
+            spWidth: spWidth,
+            spHeight: spHeight,
+            rows: rows,
+            columns: columns,
+            spacing: spacing || 0
+          }
         : imageOrConfig
     );
 
