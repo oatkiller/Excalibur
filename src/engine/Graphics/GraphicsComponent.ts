@@ -107,6 +107,12 @@ export class GraphicsLayer {
 export class GraphicsComponent implements Component<'graphics'> {
   static type: 'graphics';
   readonly type = 'graphics';
+
+  public __debug: { graphicBounds: Graphic; colliderBounds: Graphic } = {
+    graphicBounds: null,
+    colliderBounds: null
+  };
+
   private _graphics: { [graphicName: string]: Graphic } = {};
   private _layers: GraphicsLayer[] = [];
   private _layerMap: { [layerName: string]: GraphicsLayer } = {};
