@@ -534,13 +534,17 @@ export class ActorImpl extends Entity<TransformComponent | GraphicsComponent>
     this.addComponent(this.transform);
 
     // Build default pipeline
-    this.traits.push(new Traits.TileMapCollisionDetection());
+    // this.traits.push(new Traits.TileMapCollisionDetection());
     this.traits.push(new Traits.OffscreenCulling());
     this.traits.push(new Traits.CapturePointer());
 
     // Build the action queue
     this.actionQueue = new ActionQueue(this);
     this.actions = new ActionContext(this);
+  }
+
+  public enableTileMapCollision(): void {
+    this.traits.push(new Traits.TileMapCollisionDetection());
   }
 
   /**
