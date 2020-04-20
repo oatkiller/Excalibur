@@ -251,8 +251,10 @@ export class GraphicsComponent implements Component<'graphics'> {
    * @internal
    */
   public update(elapsed: number) {
-    if (this._isAnimationOrGroup(this.current)) {
-      this.current?.tick(elapsed);
+    for (const layer of this._layers) {
+      if (this._isAnimationOrGroup(layer.graphic)) {
+        layer.graphic?.tick(elapsed);
+      }
     }
   }
 
