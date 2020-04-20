@@ -1,7 +1,6 @@
 import { Vector } from '../Algebra';
 import { Graphic, GraphicOptions } from './Graphic';
 import { Animation } from './Animation';
-import { BoundingBox } from '../Collision/Index';
 import { ExcaliburGraphicsContext, ImageSource } from './Context/ExcaliburGraphicsContext';
 
 export interface GraphicsGroupingOptions {
@@ -26,11 +25,13 @@ export class GraphicsGroup extends Graphic {
   constructor(options: GraphicsGroupingOptions & GraphicOptions) {
     super(options);
     this.members = options.members;
-    let groupBB: BoundingBox = this.members.reduce((bb, member) => {
-      return bb.combine(member.graphic.localBounds.translate(member.pos));
-    }, new BoundingBox());
-    this.width = groupBB.width;
-    this.height = groupBB.height;
+    // let groupBB: BoundingBox = this.members.reduce((bb, member) => {
+    //   return bb.combine(member.graphic.localBounds.translate(member.pos));
+    // }, new BoundingBox());
+    // this.width = groupBB.width;
+    // this.height = groupBB.height;
+    this.width = 0;
+    this.height = 0;
   }
 
   public clone(): GraphicsGroup {
