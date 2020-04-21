@@ -149,7 +149,7 @@ export class TileMapImpl extends Class {
     for (x; x < xEnd; x++) {
       for (y; y < yEnd; y++) {
         let cell = this.getCell(x, y);
-        if (cell) {
+        if (cell && cell.graphics.current) {
           cells.push(cell);
         }
       }
