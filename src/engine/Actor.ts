@@ -603,8 +603,8 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
     }
   }
 
-  public on(eventName: Events.exittrigger, handler: (event: ExitTriggerEvent) => void): void;
-  public on(eventName: Events.entertrigger, handler: (event: EnterTriggerEvent) => void): void;
+  public on(eventName: Events.exittrigger, handler: (this: Actor, event: ExitTriggerEvent) => void): void;
+  public on(eventName: Events.entertrigger, handler: (this: Actor, event: EnterTriggerEvent) => void): void;
   /**
    * The **collisionstart** event is fired when a [[Body|physics body]], usually attached to an actor,
    *  first starts colliding with another [[Body|body]], and will not fire again while in contact until
@@ -612,7 +612,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionstart** event may be detecting when an actor has touched a surface
    * (like landing) or if a item has been touched and needs to be picked up.
    */
-  public on(eventName: Events.collisionstart, handler: (event: CollisionStartEvent) => void): void;
+  public on(eventName: Events.collisionstart, handler: (this: Actor, event: CollisionStartEvent) => void): void;
   /**
    * The **collisionend** event is fired when two [[Body|physics bodies]] are no longer in contact.
    * This event will not fire again until another collision and separation.
@@ -620,7 +620,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionend** event might be to detect when an actor has left a surface
    * (like jumping) or has left an area.
    */
-  public on(eventName: Events.collisionend, handler: (event: CollisionEndEvent) => void): void;
+  public on(eventName: Events.collisionend, handler: (this: Actor, event: CollisionEndEvent) => void): void;
   /**
    * The **precollision** event is fired **every frame** where a collision pair is found and two
    * bodies are intersecting.
@@ -629,7 +629,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Active-Passive scenarios. For example in a breakout game you may want to tweak the angle of
    * ricochet of the ball depending on which side of the paddle you hit.
    */
-  public on(eventName: Events.precollision, handler: (event: PreCollisionEvent) => void): void;
+  public on(eventName: Events.precollision, handler: (this: Actor, event: PreCollisionEvent) => void): void;
   /**
    * The **postcollision** event is fired for **every frame** where collision resolution was performed.
    * Collision resolution is when two bodies influence each other and cause a response like bouncing
@@ -639,39 +639,39 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Post collision would be useful if you need to know that collision resolution is happening or need to
    * tweak the default resolution.
    */
-  public on(eventName: Events.postcollision, handler: (event: PostCollisionEvent) => void): void;
-  public on(eventName: Events.kill, handler: (event: KillEvent) => void): void;
-  public on(eventName: Events.prekill, handler: (event: PreKillEvent) => void): void;
-  public on(eventName: Events.postkill, handler: (event: PostKillEvent) => void): void;
-  public on(eventName: Events.initialize, handler: (event: InitializeEvent<Actor>) => void): void;
-  public on(eventName: Events.preupdate, handler: (event: PreUpdateEvent<Actor>) => void): void;
-  public on(eventName: Events.postupdate, handler: (event: PostUpdateEvent<Actor>) => void): void;
-  public on(eventName: Events.predraw, handler: (event: PreDrawEvent) => void): void;
-  public on(eventName: Events.postdraw, handler: (event: PostDrawEvent) => void): void;
-  public on(eventName: Events.predebugdraw, handler: (event: PreDebugDrawEvent) => void): void;
-  public on(eventName: Events.postdebugdraw, handler: (event: PostDebugDrawEvent) => void): void;
-  public on(eventName: Events.pointerup, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointerdown, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointerenter, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointerleave, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointermove, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointercancel, handler: (event: PointerEvent) => void): void;
-  public on(eventName: Events.pointerwheel, handler: (event: WheelEvent) => void): void;
-  public on(eventName: Events.pointerdragstart, handler: (event: PointerDragEvent) => void): void;
-  public on(eventName: Events.pointerdragend, handler: (event: PointerDragEvent) => void): void;
-  public on(eventName: Events.pointerdragenter, handler: (event: PointerDragEvent) => void): void;
-  public on(eventName: Events.pointerdragleave, handler: (event: PointerDragEvent) => void): void;
-  public on(eventName: Events.pointerdragmove, handler: (event: PointerDragEvent) => void): void;
-  public on(eventName: Events.enterviewport, handler: (event: EnterViewPortEvent) => void): void;
-  public on(eventName: Events.exitviewport, handler: (event: ExitViewPortEvent) => void): void;
-  public on(eventName: string, handler: (event: GameEvent<Actor>) => void): void;
-  public on(eventName: string, handler: (event: any) => void): void {
+  public on(eventName: Events.postcollision, handler: (this: Actor, event: PostCollisionEvent) => void): void;
+  public on(eventName: Events.kill, handler: (this: Actor, event: KillEvent) => void): void;
+  public on(eventName: Events.prekill, handler: (this: Actor, event: PreKillEvent) => void): void;
+  public on(eventName: Events.postkill, handler: (this: Actor, event: PostKillEvent) => void): void;
+  public on(eventName: Events.initialize, handler: (this: Actor, event: InitializeEvent<Actor>) => void): void;
+  public on(eventName: Events.preupdate, handler: (this: Actor, event: PreUpdateEvent<Actor>) => void): void;
+  public on(eventName: Events.postupdate, handler: (this: Actor, event: PostUpdateEvent<Actor>) => void): void;
+  public on(eventName: Events.predraw, handler: (this: Actor, event: PreDrawEvent) => void): void;
+  public on(eventName: Events.postdraw, handler: (this: Actor, event: PostDrawEvent) => void): void;
+  public on(eventName: Events.predebugdraw, handler: (this: Actor, event: PreDebugDrawEvent) => void): void;
+  public on(eventName: Events.postdebugdraw, handler: (this: Actor, event: PostDebugDrawEvent) => void): void;
+  public on(eventName: Events.pointerup, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointerdown, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointerenter, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointerleave, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointermove, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointercancel, handler: (this: Actor, event: PointerEvent) => void): void;
+  public on(eventName: Events.pointerwheel, handler: (this: Actor, event: WheelEvent) => void): void;
+  public on(eventName: Events.pointerdragstart, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public on(eventName: Events.pointerdragend, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public on(eventName: Events.pointerdragenter, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public on(eventName: Events.pointerdragleave, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public on(eventName: Events.pointerdragmove, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public on(eventName: Events.enterviewport, handler: (this: Actor, event: EnterViewPortEvent) => void): void;
+  public on(eventName: Events.exitviewport, handler: (this: Actor, event: ExitViewPortEvent) => void): void;
+  public on(eventName: string, handler: (this: Actor, event: GameEvent<Actor>) => void): void;
+  public on(eventName: string, handler: (this: Actor, event: any) => void): void {
     this._checkForPointerOptIn(eventName);
     super.on(eventName, handler);
   }
 
-  public once(eventName: Events.exittrigger, handler: (event: ExitTriggerEvent) => void): void;
-  public once(eventName: Events.entertrigger, handler: (event: EnterTriggerEvent) => void): void;
+  public once(eventName: Events.exittrigger, handler: (this: Actor, event: ExitTriggerEvent) => void): void;
+  public once(eventName: Events.entertrigger, handler: (this: Actor, event: EnterTriggerEvent) => void): void;
   /**
    * The **collisionstart** event is fired when a [[Body|physics body]], usually attached to an actor,
    *  first starts colliding with another [[Body|body]], and will not fire again while in contact until
@@ -679,7 +679,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionstart** event may be detecting when an actor has touch a surface
    * (like landing) or if a item has been touched and needs to be picked up.
    */
-  public once(eventName: Events.collisionstart, handler: (event: CollisionStartEvent) => void): void;
+  public once(eventName: Events.collisionstart, handler: (this: Actor, event: CollisionStartEvent) => void): void;
   /**
    * The **collisionend** event is fired when two [[Body|physics bodies]] are no longer in contact.
    * This event will not fire again until another collision and separation.
@@ -687,7 +687,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionend** event might be to detect when an actor has left a surface
    * (like jumping) or has left an area.
    */
-  public once(eventName: Events.collisionend, handler: (event: CollisionEndEvent) => void): void;
+  public once(eventName: Events.collisionend, handler: (this: Actor, event: CollisionEndEvent) => void): void;
   /**
    * The **precollision** event is fired **every frame** where a collision pair is found and two
    * bodies are intersecting.
@@ -696,7 +696,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Active-Passive scenarios. For example in a breakout game you may want to tweak the angle of
    * ricochet of the ball depending on which side of the paddle you hit.
    */
-  public once(eventName: Events.precollision, handler: (event: PreCollisionEvent) => void): void;
+  public once(eventName: Events.precollision, handler: (this: Actor, event: PreCollisionEvent) => void): void;
   /**
    * The **postcollision** event is fired for **every frame** where collision resolution was performed.
    * Collision resolution is when two bodies influence each other and cause a response like bouncing
@@ -706,39 +706,39 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Post collision would be useful if you need to know that collision resolution is happening or need to
    * tweak the default resolution.
    */
-  public once(eventName: Events.postcollision, handler: (event: PostCollisionEvent) => void): void;
-  public once(eventName: Events.kill, handler: (event: KillEvent) => void): void;
-  public once(eventName: Events.postkill, handler: (event: PostKillEvent) => void): void;
-  public once(eventName: Events.prekill, handler: (event: PreKillEvent) => void): void;
-  public once(eventName: Events.initialize, handler: (event: InitializeEvent<Actor>) => void): void;
-  public once(eventName: Events.preupdate, handler: (event: PreUpdateEvent<Actor>) => void): void;
-  public once(eventName: Events.postupdate, handler: (event: PostUpdateEvent<Actor>) => void): void;
-  public once(eventName: Events.predraw, handler: (event: PreDrawEvent) => void): void;
-  public once(eventName: Events.postdraw, handler: (event: PostDrawEvent) => void): void;
-  public once(eventName: Events.predebugdraw, handler: (event: PreDebugDrawEvent) => void): void;
-  public once(eventName: Events.postdebugdraw, handler: (event: PostDebugDrawEvent) => void): void;
-  public once(eventName: Events.pointerup, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointerdown, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointerenter, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointerleave, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointermove, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointercancel, handler: (event: PointerEvent) => void): void;
-  public once(eventName: Events.pointerwheel, handler: (event: WheelEvent) => void): void;
-  public once(eventName: Events.pointerdragstart, handler: (event: PointerDragEvent) => void): void;
-  public once(eventName: Events.pointerdragend, handler: (event: PointerDragEvent) => void): void;
-  public once(eventName: Events.pointerdragenter, handler: (event: PointerDragEvent) => void): void;
-  public once(eventName: Events.pointerdragleave, handler: (event: PointerDragEvent) => void): void;
-  public once(eventName: Events.pointerdragmove, handler: (event: PointerDragEvent) => void): void;
-  public once(eventName: Events.enterviewport, handler: (event: EnterViewPortEvent) => void): void;
-  public once(eventName: Events.exitviewport, handler: (event: ExitViewPortEvent) => void): void;
-  public once(eventName: string, handler: (event: GameEvent<Actor>) => void): void;
-  public once(eventName: string, handler: (event: any) => void): void {
+  public once(eventName: Events.postcollision, handler: (this: Actor, event: PostCollisionEvent) => void): void;
+  public once(eventName: Events.kill, handler: (this: Actor, event: KillEvent) => void): void;
+  public once(eventName: Events.postkill, handler: (this: Actor, event: PostKillEvent) => void): void;
+  public once(eventName: Events.prekill, handler: (this: Actor, event: PreKillEvent) => void): void;
+  public once(eventName: Events.initialize, handler: (this: Actor, event: InitializeEvent<Actor>) => void): void;
+  public once(eventName: Events.preupdate, handler: (this: Actor, event: PreUpdateEvent<Actor>) => void): void;
+  public once(eventName: Events.postupdate, handler: (this: Actor, event: PostUpdateEvent<Actor>) => void): void;
+  public once(eventName: Events.predraw, handler: (this: Actor, event: PreDrawEvent) => void): void;
+  public once(eventName: Events.postdraw, handler: (this: Actor, event: PostDrawEvent) => void): void;
+  public once(eventName: Events.predebugdraw, handler: (this: Actor, event: PreDebugDrawEvent) => void): void;
+  public once(eventName: Events.postdebugdraw, handler: (this: Actor, event: PostDebugDrawEvent) => void): void;
+  public once(eventName: Events.pointerup, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointerdown, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointerenter, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointerleave, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointermove, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointercancel, handler: (this: Actor, event: PointerEvent) => void): void;
+  public once(eventName: Events.pointerwheel, handler: (this: Actor, event: WheelEvent) => void): void;
+  public once(eventName: Events.pointerdragstart, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public once(eventName: Events.pointerdragend, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public once(eventName: Events.pointerdragenter, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public once(eventName: Events.pointerdragleave, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public once(eventName: Events.pointerdragmove, handler: (this: Actor, event: PointerDragEvent) => void): void;
+  public once(eventName: Events.enterviewport, handler: (this: Actor, event: EnterViewPortEvent) => void): void;
+  public once(eventName: Events.exitviewport, handler: (this: Actor, event: ExitViewPortEvent) => void): void;
+  public once(eventName: string, handler: (this: Actor, event: GameEvent<Actor>) => void): void;
+  public once(eventName: string, handler: (this: Actor, event: any) => void): void {
     this._checkForPointerOptIn(eventName);
     super.once(eventName, handler);
   }
 
-  public off(eventName: Events.exittrigger, handler?: (event: ExitTriggerEvent) => void): void;
-  public off(eventName: Events.entertrigger, handler?: (event: EnterTriggerEvent) => void): void;
+  public off(eventName: Events.exittrigger, handler?: (this: Actor, event: ExitTriggerEvent) => void): void;
+  public off(eventName: Events.entertrigger, handler?: (this: Actor, event: EnterTriggerEvent) => void): void;
   /**
    * The **collisionstart** event is fired when a [[Body|physics body]], usually attached to an actor,
    *  first starts colliding with another [[Body|body]], and will not fire again while in contact until
@@ -746,7 +746,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionstart** event may be detecting when an actor has touch a surface
    * (like landing) or if a item has been touched and needs to be picked up.
    */
-  public off(eventName: Events.collisionstart, handler?: (event: CollisionStartEvent) => void): void;
+  public off(eventName: Events.collisionstart, handler?: (this: Actor, event: CollisionStartEvent) => void): void;
   /**
    * The **collisionend** event is fired when two [[Body|physics bodies]] are no longer in contact.
    * This event will not fire again until another collision and separation.
@@ -754,7 +754,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Use cases for the **collisionend** event might be to detect when an actor has left a surface
    * (like jumping) or has left an area.
    */
-  public off(eventName: Events.collisionend, handler?: (event: CollisionEndEvent) => void): void;
+  public off(eventName: Events.collisionend, handler?: (this: Actor, event: CollisionEndEvent) => void): void;
   /**
    * The **precollision** event is fired **every frame** where a collision pair is found and two
    * bodies are intersecting.
@@ -763,7 +763,7 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Active-Passive scenarios. For example in a breakout game you may want to tweak the angle of
    * ricochet of the ball depending on which side of the paddle you hit.
    */
-  public off(eventName: Events.precollision, handler?: (event: PreCollisionEvent) => void): void;
+  public off(eventName: Events.precollision, handler?: (this: Actor, event: PreCollisionEvent) => void): void;
   /**
    * The **postcollision** event is fired for **every frame** where collision resolution was performed.
    * Collision resolution is when two bodies influence each other and cause a response like bouncing
@@ -773,30 +773,30 @@ export class ActorImpl extends Entity implements Actionable, Eventable, PointerE
    * Post collision would be useful if you need to know that collision resolution is happening or need to
    * tweak the default resolution.
    */
-  public off(eventName: Events.postcollision, handler: (event: PostCollisionEvent) => void): void;
-  public off(eventName: Events.pointerup, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointerdown, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointerenter, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointerleave, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointermove, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointercancel, handler?: (event: PointerEvent) => void): void;
-  public off(eventName: Events.pointerwheel, handler?: (event: WheelEvent) => void): void;
-  public off(eventName: Events.pointerdragstart, handler?: (event: PointerDragEvent) => void): void;
-  public off(eventName: Events.pointerdragend, handler?: (event: PointerDragEvent) => void): void;
-  public off(eventName: Events.pointerdragenter, handler?: (event: PointerDragEvent) => void): void;
-  public off(eventName: Events.pointerdragleave, handler?: (event: PointerDragEvent) => void): void;
-  public off(eventName: Events.pointerdragmove, handler?: (event: PointerDragEvent) => void): void;
-  public off(eventName: Events.prekill, handler?: (event: PreKillEvent) => void): void;
-  public off(eventName: Events.postkill, handler?: (event: PostKillEvent) => void): void;
-  public off(eventName: Events.initialize, handler?: (event: Events.InitializeEvent<Actor>) => void): void;
-  public off(eventName: Events.postupdate, handler?: (event: Events.PostUpdateEvent<Actor>) => void): void;
-  public off(eventName: Events.preupdate, handler?: (event: Events.PreUpdateEvent<Actor>) => void): void;
-  public off(eventName: Events.postdraw, handler?: (event: Events.PostDrawEvent) => void): void;
-  public off(eventName: Events.predraw, handler?: (event: Events.PreDrawEvent) => void): void;
-  public off(eventName: Events.enterviewport, handler?: (event: EnterViewPortEvent) => void): void;
-  public off(eventName: Events.exitviewport, handler?: (event: ExitViewPortEvent) => void): void;
-  public off(eventName: string, handler?: (event: GameEvent<Actor>) => void): void;
-  public off(eventName: string, handler?: (event: any) => void): void {
+  public off(eventName: Events.postcollision, handler: (this: Actor, event: PostCollisionEvent) => void): void;
+  public off(eventName: Events.pointerup, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointerdown, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointerenter, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointerleave, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointermove, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointercancel, handler?: (this: Actor, event: PointerEvent) => void): void;
+  public off(eventName: Events.pointerwheel, handler?: (this: Actor, event: WheelEvent) => void): void;
+  public off(eventName: Events.pointerdragstart, handler?: (this: Actor, event: PointerDragEvent) => void): void;
+  public off(eventName: Events.pointerdragend, handler?: (this: Actor, event: PointerDragEvent) => void): void;
+  public off(eventName: Events.pointerdragenter, handler?: (this: Actor, event: PointerDragEvent) => void): void;
+  public off(eventName: Events.pointerdragleave, handler?: (this: Actor, event: PointerDragEvent) => void): void;
+  public off(eventName: Events.pointerdragmove, handler?: (this: Actor, event: PointerDragEvent) => void): void;
+  public off(eventName: Events.prekill, handler?: (this: Actor, event: PreKillEvent) => void): void;
+  public off(eventName: Events.postkill, handler?: (this: Actor, event: PostKillEvent) => void): void;
+  public off(eventName: Events.initialize, handler?: (this: Actor, event: Events.InitializeEvent<Actor>) => void): void;
+  public off(eventName: Events.postupdate, handler?: (this: Actor, event: Events.PostUpdateEvent<Actor>) => void): void;
+  public off(eventName: Events.preupdate, handler?: (this: Actor, event: Events.PreUpdateEvent<Actor>) => void): void;
+  public off(eventName: Events.postdraw, handler?: (this: Actor, event: Events.PostDrawEvent) => void): void;
+  public off(eventName: Events.predraw, handler?: (this: Actor, event: Events.PreDrawEvent) => void): void;
+  public off(eventName: Events.enterviewport, handler?: (this: Actor, event: EnterViewPortEvent) => void): void;
+  public off(eventName: Events.exitviewport, handler?: (this: Actor, event: ExitViewPortEvent) => void): void;
+  public off(eventName: string, handler?: (this: Actor, event: GameEvent<Actor>) => void): void;
+  public off(eventName: string, handler?: (this: Actor, event: any) => void): void {
     super.off(eventName, handler);
   }
 
